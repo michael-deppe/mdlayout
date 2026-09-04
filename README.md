@@ -155,7 +155,8 @@ reference implementation for writing larger technical documents.
 
 ## Documentation
 
-The complete user manual is provided as `mdlayout.pdf`.
+The complete user manual is provided as `mdlayout-Documentation.pdf` which
+can be generated as an example directly from `mdlayout.tex` as `mdlayout.pdf`.
 
 ## License
 
