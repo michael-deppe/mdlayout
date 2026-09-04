@@ -14,8 +14,6 @@
 *.lot
 
 # Generated output
-*.pdf
-*.docx
 html-build/tmp/
 html-build/output/
 
