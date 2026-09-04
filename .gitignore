@@ -1,0 +1,23 @@
+# LaTeX
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+
+# Generated output
+*.pdf
+*.docx
+html-build/tmp/
+html-build/output/
+
+# macOS
+.DS_Store

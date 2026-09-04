@@ -1,0 +1,1706 @@
+% !TEX TS-program = lualatex
+% !TeX spellcheck = en_US
+% !TEX root = mdlayout.tex
+
+%%
+%% mdlayout.sty
+%%
+%% Copyright 2026 Prof. Dr. Michael Deppe
+%%
+%%               _ _                         _
+%% _ __ ___   __| | | __ _ _   _  ___  _   _| |_
+%%| '_ ` _ \ / _` | |/ _` | | | |/ _ \| | | | __|
+%%| | | | | | (_| | | (_| | |_| | (_) | |_| | |_
+%%|_| |_| |_|\__,_|_|\__,_|\__, |\___/ \__,_|\__|
+%%                         |___/
+%%
+%% mdlayout — Semantic layout framework for technical documentation.
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL),
+%% either version 1.3c of this license or (at your option)
+%% any later version.
+%%
+%% The latest version of this license is available at
+%%   https://www.latex-project.org/lppl.txt
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is
+%%   Michael Deppe.
+%%
+%% This work consists of the files
+%%   mdlayout.sty
+%%   mdlayout-printout.sty
+%%   mdlayout-referencetable.sty
+%%   mdpreamble.tex
+%%   mdlayout.cwl
+%%   mdlayout.md
+%%   mdlayout.tex
+%%   mdlayout.pdf
+%%   mdlayout-margin-logo.pdf
+%%   mdlayout.png
+%%   images.pdf
+%%
+ 
+
+\NeedsTeXFormat{LaTeX2e}
+
+% --------------------------------------------------------------------------
+% Package version information
+% --------------------------------------------------------------------------
+
+\def\mdlayoutPackageName{mdlayout}
+\def\mdlayoutDate{2026/08/18}
+\def\mdlayoutVersion{0.16.5}
+\def\mdlayoutPrintoutVersion{v0.11.1}
+\def\mdlayoutReferenceTableVersion{v0.5.2}
+
+
+\ProvidesPackage{\mdlayoutPackageName}
+[\mdlayoutDate\space
+v\mdlayoutVersion\space
+Asymmetric layout for KOMA-Script]
+
+% --------------------------------------------------------------------------
+% Output-target conditionals
+% --------------------------------------------------------------------------
+% Public switches for source shared by PDF and HTML builds. The LaTeX build
+% is the PDF target; the HTML preprocessor selects the complementary values.
+\newif\ifPdf
+\Pdftrue
+\newif\ifHtml
+\Htmlfalse
+
+% --------------------------------------------------------------------------
+% Version numbering
+%
+% Semantic version:
+%   xx.yy.zz
+%
+% Internal revision number:
+%   xxyyzz
+%
+% Examples:
+%   0.7.2     -> 000702
+%   1.0.0     -> 010000
+%   12.3.4    -> 120304
+%
+% In numeric comparisons, leading zeros are ignored:
+%   010000 = 10000
+%
+% Major may have any number of digits. Minor and patch are always encoded
+% using two digits.
+% --------------------------------------------------------------------------
+
+
+% ==========================================================================
+% mdlayout wordmark
+% ==========================================================================
+
+\RequirePackage{xcolor}
+\RequirePackage{fontspec}
+
+% Official mdlayout design colour.
+\providecolor{mdColorPrimary}{RGB}{2,29,97}
+
+\newfontfamily\mdlogofont{TeX Gyre Heros}
+
+\DeclareRobustCommand{\mdlayout}{%
+	\mbox{%
+		{\mdlogofont\bfseries\color{mdColorPrimary}md}%
+		{\mdlogofont layout}%
+	}%
+}
+
+\makeatletter
+
+\def\MD@ParseVersion#1.#2.#3\@nil{%
+	\edef\mdlayoutRevisionNumber{%
+		\ifnum#1<10 0\fi#1%
+		\ifnum#2<10 0\fi#2%
+		\ifnum#3<10 0\fi#3%
+	}%
+}
+
+\expandafter\MD@ParseVersion\mdlayoutVersion\@nil
+
+\makeatother
+
+% Revision
+\newcommand*{\IfMDLayoutRevisionAtLeast}[2]{%
+	\ifnum\mdlayoutRevisionNumber<#1\relax
+	\else
+	#2%
+	\fi
+}
+
+% Usage of \IfMDLayoutRevisionAtLeast
+% \IfMDLayoutRevisionAtLeast{800}{
+%	% Features introduced in v0.8.0
+% }
+
+% or
+
+% \ifnum\mdlayoutRevisionNumber<800
+%   \PackageError{mypackage}
+%     {mdlayout >= 0.8.0 required}
+%     {}
+% \fi
+
+% --------------------------------------------------------------------------
+% Required Packages
+% --------------------------------------------------------------------------
+
+\RequirePackage{kvoptions}
+\RequirePackage{etoolbox}
+\RequirePackage{changepage}
+\RequirePackage{scrlayer-scrpage}
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+\RequirePackage{caption}
+\RequirePackage{fvextra}
+\RequirePackage{tikz}
+
+\makeatletter
+
+% --------------------------------------------------------------------------
+% Supported document classes
+% --------------------------------------------------------------------------
+
+\newif\ifMD@supportedclass
+\MD@supportedclassfalse
+
+\@ifclassloaded{scrartcl}{\MD@supportedclasstrue}{}
+\@ifclassloaded{scrreprt}{\MD@supportedclasstrue}{}
+\@ifclassloaded{scrbook}{\MD@supportedclasstrue}{}
+
+\ifMD@supportedclass
+\else
+\PackageError{mdlayout}
+{Unsupported document class}
+{The mdlayout package supports only the KOMA-Script classes\MessageBreak
+	scrartcl, scrreprt, and scrbook.}%
+\fi
+
+% --------------------------------------------------------------------------
+% Package options
+% --------------------------------------------------------------------------
+
+\SetupKeyvalOptions{
+	family=mdlayout,
+	prefix=MDopt@
+}
+
+% --------------------------------------------------------------------------
+% Public package-option defaults
+%
+% These commands expose the default values used by mdlayout.
+% They may be used by the documentation and by client documents.
+% Changing them after the package has been loaded does not change the
+% corresponding package option.
+% --------------------------------------------------------------------------
+% Example:
+% marginwidth          <-> \mdDefaultMarginwidth
+% minmarginwidth       <-> \mdDefaultMinmarginwidth
+
+\newcommand*{\mdDefaultMarginwidth}{38mm}
+\newcommand*{\mdDefaultMinmarginwidth}{20mm}
+\newcommand*{\mdDefaultMintextwidth}{80mm}
+\newcommand*{\mdDefaultGutter}{5mm}
+\newcommand*{\mdDefaultRightmargin}{20mm}
+\newcommand*{\mdDefaultMinleftmargin}{10mm}
+
+\newcommand*{\mdDefaultWidetitle}{true}
+\newcommand*{\mdDefaultWideheadings}{true}
+\newcommand*{\mdDefaultWideheadfoot}{true}
+
+\newcommand*{\mdDefaultHeadsepline}{0.8pt}
+\newcommand*{\mdDefaultPlainheadsepline}{false}
+
+\newcommand*{\mdDefaultBottommargin}{30mm}
+
+\newcommand*{\mdDefaultArticletitlerule}{3.0pt}
+\newcommand*{\mdDefaultChapterrule}{2.0pt}
+\newcommand*{\mdDefaultSectionrule}{1.4pt}
+\newcommand*{\mdDefaultHeadingrulecolor}{black}
+
+\newcommand*{\mdDefaultArticletitlerulegapFactor}{0.55}
+\newcommand*{\mdDefaultChapterrulegapFactor}{0.55}
+\newcommand*{\mdDefaultSectionrulegapFactor}{0.35}
+
+\newcommand*{\mdDefaultArticletitlerulegap}{\mdDefaultArticletitlerulegapFactor\baselineskip}
+\newcommand*{\mdDefaultChapterrulegap}{\mdDefaultChapterrulegapFactor\baselineskip}
+\newcommand*{\mdDefaultSectionrulegap}{\mdDefaultSectionrulegapFactor\baselineskip}
+
+\newcommand*{\mdDefaultShowlayout}{false}
+
+
+% Width of the usable part of the wide left margin.
+\DeclareStringOption[\mdDefaultMarginwidth]{marginwidth}
+
+% Minimum widths for automatic adaptation on narrow paper.
+\DeclareStringOption[\mdDefaultMinmarginwidth]{minmarginwidth}
+\DeclareStringOption[\mdDefaultMintextwidth]{mintextwidth}
+
+% Horizontal separation between margin area and normal text column.
+\DeclareStringOption[\mdDefaultGutter]{gutter}
+
+% Physical right page margin.
+% The default mdlayout design uses a fixed right margin.
+% An empty value (\usepackage[rightmargin=]{mdlayout})
+% retains KOMA-Script's calculated right margin.
+\DeclareStringOption[\mdDefaultRightmargin]{rightmargin}
+
+% Minimum physical distance between the left paper edge and FullArea.
+% This value is used only when the layout has to be adapted on narrow paper.
+\DeclareStringOption[\mdDefaultMinleftmargin]{minleftmargin}
+
+% Move the document title to the FullArea while retaining KOMA-Script's
+% complete title logic.
+\DeclareBoolOption[\mdDefaultWidetitle]{widetitle}
+
+% Move KOMA-Script headings to the left edge of the FullArea.
+\DeclareBoolOption[\mdDefaultWideheadings]{wideheadings}
+
+% Extend page headers and footers over the FullArea.
+\DeclareBoolOption[\mdDefaultWideheadfoot]{wideheadfoot}
+
+% Thickness of the separator below the page header. Use false to disable it.
+\DeclareStringOption[\mdDefaultHeadsepline]{headsepline}
+
+% Also show the separator on plain chapter-opening pages.
+\DeclareBoolOption[\mdDefaultPlainheadsepline]{plainheadsepline}
+
+% Physical distance between the lower edge of the text area and the paper.
+% If empty, KOMA-Script's calculated text height is retained.
+\DeclareStringOption[\mdDefaultBottommargin]{bottommargin}
+
+% Heading and article-title rules inspired by technical manuals.
+% A value of 0pt disables the corresponding rule.
+\DeclareStringOption[\mdDefaultArticletitlerule]{articletitlerule}
+\DeclareStringOption[\mdDefaultChapterrule]{chapterrule}
+\DeclareStringOption[\mdDefaultSectionrule]{sectionrule}
+\DeclareStringOption[\mdDefaultHeadingrulecolor]{headingrulecolor}
+
+\DeclareStringOption[\mdDefaultArticletitlerulegap]{articletitlerulegap}
+\DeclareStringOption[\mdDefaultChapterrulegap]{chapterrulegap}
+\DeclareStringOption[\mdDefaultSectionrulegap]{sectionrulegap}
+
+% Write calculated layout dimensions to the log file.
+\DeclareBoolOption[\mdDefaultShowlayout]{showlayout}
+
+\ProcessKeyvalOptions*
+
+% --------------------------------------------------------------------------
+% Optional company metadata
+% --------------------------------------------------------------------------
+
+\newcommand*{\MD@Company}{}
+\newcommand*{\company}[1]{%
+	\gdef\MD@Company{#1}%
+}
+
+% --------------------------------------------------------------------------
+% mdlayout KOMA-Script defaults
+%
+% These defaults are applied only if the user has not explicitly specified
+% the corresponding option in \documentclass.
+%
+% General class properties such as paper size, font size and one-/two-sided
+% layout remain entirely under control of KOMA-Script.
+% --------------------------------------------------------------------------
+
+\newif\ifMD@UserDIV
+\newif\ifMD@UserBCOR
+\newif\ifMD@UserHeadings
+\newif\ifMD@UserChapterPrefix
+
+\MD@UserDIVfalse
+\MD@UserBCORfalse
+\MD@UserHeadingsfalse
+\MD@UserChapterPrefixfalse
+
+% Examine the options explicitly supplied to the document class.
+\edef\MD@ClassOptions{\@classoptionslist}
+
+% DIV=...
+\in@{DIV=}{\MD@ClassOptions}
+\ifin@
+\MD@UserDIVtrue
+\fi
+
+% BCOR=...
+\in@{BCOR=}{\MD@ClassOptions}
+\ifin@
+\MD@UserBCORtrue
+\fi
+
+% headings=...
+\in@{headings=}{\MD@ClassOptions}
+\ifin@
+\MD@UserHeadingstrue
+\fi
+
+% chapterprefix may occur as
+%
+%   chapterprefix
+%   chapterprefix=true
+%   chapterprefix=false
+%   headings=chapterprefix
+%   headings=nochapterprefix
+%
+% Therefore testing for the word itself is intentional.
+\in@{chapterprefix}{\MD@ClassOptions}
+\ifin@
+\MD@UserChapterPrefixtrue
+\fi
+
+
+% --------------------------------------------------------------------------
+% Apply mdlayout defaults where the user has made no explicit choice.
+% --------------------------------------------------------------------------
+
+\ifMD@UserDIV
+\else
+\KOMAoptions{DIV=calc}%
+\fi
+
+\ifMD@UserBCOR
+\else
+\KOMAoptions{BCOR=5mm}%
+\fi
+
+\ifMD@UserHeadings
+\else
+\KOMAoptions{headings=normal}%
+\fi
+
+% chapterprefix is meaningful only for document classes
+% that provide a chapter level (e.g. scrbook, scrreprt).
+% Article classes such as scrartcl do not define \chapter.
+\@ifundefined{chapter}{%
+	% No chapter level: nothing to do.
+}{%
+	\ifMD@UserChapterPrefix
+	\else
+	\KOMAoptions{chapterprefix=true}%
+	\fi
+}
+
+% --------------------------------------------------------------------------
+% Public dimensions
+% --------------------------------------------------------------------------
+
+\newdimen\mdTextWidth
+\newdimen\mdMinTextArea
+\newdimen\mdFullWidth
+\newdimen\mdMarginWidth
+\newdimen\mdMinMarginArea
+\newdimen\mdGutterWidth
+\newdimen\mdWideOffset
+\newdimen\mdRightMargin
+\newdimen\mdMinLeftMargin
+\newdimen\mdBottomMargin
+\newdimen\mdHalfOffset
+\newdimen\mdHalfWidth
+
+% Physical horizontal positions measured from the left paper edge.
+\newdimen\mdFullLeft
+\newdimen\mdFullRight
+\newdimen\mdMarginLeft
+\newdimen\mdMarginRight
+\newdimen\mdTextLeft
+\newdimen\mdTextRight
+
+% Compatibility names requested for document use.
+% \textwidth remains the normal text width.
+\@ifundefined{fullwidth}{\newdimen\fullwidth}{}
+\@ifundefined{marginwidth}{\newdimen\marginwidth}{}
+\@ifundefined{gutterwidth}{\newdimen\gutterwidth}{}
+\@ifundefined{wideoffset}{\newdimen\wideoffset}{}
+\@ifundefined{megatextindent}{\newdimen\megatextindent}{}
+\@ifundefined{textindent}{\newdimen\textindent}{}
+
+% --------------------------------------------------------------------------
+% Internal dimensions
+% --------------------------------------------------------------------------
+
+\newdimen\MD@OriginalTextWidth
+\newdimen\MD@OriginalOddSideMargin
+\newdimen\MD@OriginalEvenSideMargin
+\newdimen\MD@OriginalRightMargin
+\newdimen\MD@AvailableWidth
+\newdimen\MD@TextTop
+
+% Local compensation for headings placed inside DirectoryArea.
+% Outside DirectoryArea this value remains zero.
+\newdimen\MD@HeadingAreaOffset
+\MD@HeadingAreaOffset=0pt
+
+% --------------------------------------------------------------------------
+% Layout calculation
+% --------------------------------------------------------------------------
+
+\newcommand*{\MD@CalculateLayout}{%
+	\mdTextWidth=\MD@OriginalTextWidth
+	\mdMarginWidth=\MDopt@marginwidth\relax
+	\mdMinMarginArea=\MDopt@minmarginwidth\relax
+	\mdMinTextArea=\MDopt@mintextwidth\relax
+	\mdGutterWidth=\MDopt@gutter\relax
+	\mdMinLeftMargin=\MDopt@minleftmargin\relax
+
+	\MD@OriginalRightMargin=\dimexpr
+		\paperwidth-1in-\hoffset-\MD@OriginalOddSideMargin-\MD@OriginalTextWidth
+	\relax
+	\ifdefempty{\MDopt@rightmargin}
+	{\mdRightMargin=\MD@OriginalRightMargin}
+	{\mdRightMargin=\MDopt@rightmargin\relax}%
+	\MD@AvailableWidth=\dimexpr
+		\paperwidth-\mdRightMargin-\mdMinLeftMargin
+	\relax
+
+	% Validate fixed and minimum dimensions.
+	\ifdim\mdMarginWidth<0pt
+		\PackageError{mdlayout}{Negative margin width}
+		{The marginwidth option must not be negative.}%
+	\fi
+	\ifdim\mdMinMarginArea<0pt
+		\PackageError{mdlayout}{Negative minimum margin width}
+		{The minmarginwidth option must not be negative.}%
+	\fi
+	\ifdim\mdMinTextArea<0pt
+		\PackageError{mdlayout}{Negative minimum text width}
+		{The mintextwidth option must not be negative.}%
+	\fi
+	\ifdim\mdGutterWidth<0pt
+		\PackageError{mdlayout}{Negative gutter width}
+		{The gutter option must not be negative.}%
+	\fi
+	\ifdim\mdRightMargin<0pt
+		\PackageError{mdlayout}{Negative right margin}
+		{The rightmargin option must not be negative.}%
+	\fi
+
+	\ifdim\mdMinLeftMargin<0pt
+		\PackageError{mdlayout}{Negative minimum left margin}
+		{The minleftmargin option must not be negative.}%
+	\fi
+
+	% A minimum larger than the requested width cannot enlarge the layout.
+	\ifdim\mdMinMarginArea>\mdMarginWidth
+		\mdMinMarginArea=\mdMarginWidth
+	\fi
+	\ifdim\mdMinTextArea>\mdTextWidth
+		\mdMinTextArea=\mdTextWidth
+	\fi
+
+	% Stage 1: reduce MarginArea first.
+	\@tempdima=\dimexpr\mdTextWidth+\mdMarginWidth+\mdGutterWidth\relax
+	\ifdim\@tempdima>\MD@AvailableWidth
+		\@tempdimb=\mdMarginWidth
+		\mdMarginWidth=\dimexpr\MD@AvailableWidth-\mdTextWidth-\mdGutterWidth\relax
+		\ifdim\mdMarginWidth<\mdMinMarginArea
+			\mdMarginWidth=\mdMinMarginArea
+		\fi
+		\ifdim\mdMarginWidth<\@tempdimb
+			\PackageWarningNoLine{mdlayout}{%
+				The requested layout is too wide for the current paper size.\MessageBreak
+				MarginArea reduced from \the\@tempdimb\space to \the\mdMarginWidth%
+			}%
+		\fi
+	\fi
+
+	% Stage 2: after MarginArea reaches its minimum, reduce TextArea.
+	\@tempdima=\dimexpr\mdTextWidth+\mdMarginWidth+\mdGutterWidth\relax
+	\ifdim\@tempdima>\MD@AvailableWidth
+		\@tempdimb=\mdTextWidth
+		\mdTextWidth=\dimexpr\MD@AvailableWidth-\mdMarginWidth-\mdGutterWidth\relax
+		\ifdim\mdTextWidth<\mdMinTextArea
+			\mdTextWidth=\mdMinTextArea
+		\fi
+		\ifdim\mdTextWidth<\@tempdimb
+			\PackageWarningNoLine{mdlayout}{%
+				MarginArea has reached its minimum width of \the\mdMarginWidth.\MessageBreak
+				TextArea reduced from \the\@tempdimb\space to \the\mdTextWidth%
+			}%
+		\fi
+	\fi
+
+	% Below both minima there is no valid mdlayout geometry.
+	\@tempdima=\dimexpr\mdTextWidth+\mdMarginWidth+\mdGutterWidth\relax
+	\ifdim\@tempdima>\MD@AvailableWidth
+		\PackageError{mdlayout}
+		{Paper too narrow for minimum mdlayout dimensions}
+		{Paper width: \the\paperwidth\MessageBreak
+			Minimum left margin: \the\mdMinLeftMargin\MessageBreak
+			Minimum MarginArea: \the\mdMinMarginArea\MessageBreak
+			Gutter: \the\mdGutterWidth\MessageBreak
+			Minimum TextArea: \the\mdMinTextArea\MessageBreak
+			Right margin: \the\mdRightMargin\MessageBreak
+			Use a larger paper size or reduce minmarginwidth or mintextwidth.}%
+	\fi
+
+	% Recalculate all dependent dimensions from the adapted widths.
+	\mdWideOffset=\dimexpr\mdMarginWidth+\mdGutterWidth\relax
+	\mdHalfOffset=.5\mdWideOffset
+	\mdHalfWidth=\dimexpr\mdTextWidth+\mdHalfOffset\relax
+	\mdFullWidth=\dimexpr\mdTextWidth+\mdWideOffset\relax
+	\mdTextRight=\dimexpr\paperwidth-\mdRightMargin\relax
+	\mdTextLeft=\dimexpr\mdTextRight-\mdTextWidth\relax
+	\mdFullRight=\mdTextRight
+	\mdFullLeft=\dimexpr\mdFullRight-\mdFullWidth\relax
+
+	% By construction FullArea must not cross the minimum physical left margin.
+	\ifdim\mdFullLeft<\mdMinLeftMargin
+		\PackageError{mdlayout}
+		{Calculated FullArea violates minimum left margin}
+		{FullArea starts at \the\mdFullLeft,\MessageBreak
+			but minleftmargin is \the\mdMinLeftMargin.}%
+	\fi
+
+	\mdMarginLeft=\mdFullLeft
+	\mdMarginRight=\dimexpr\mdMarginLeft+\mdMarginWidth\relax
+
+	% The normal text column deliberately occupies the same physical position
+	% on odd and even pages.
+	\oddsidemargin=\dimexpr
+	\mdTextLeft-1in-\hoffset
+	\relax
+	\evensidemargin=\oddsidemargin
+	
+	\textwidth=\mdTextWidth
+	\columnwidth=\textwidth
+	\linewidth=\textwidth
+	\hsize=\textwidth
+	
+	\fullwidth=\mdFullWidth
+	\marginwidth=\mdMarginWidth
+	\gutterwidth=\mdGutterWidth
+	\wideoffset=\mdWideOffset
+	\megatextindent=-\mdWideOffset
+	\textindent=-\mdWideOffset
+	
+	% Retain KOMA-Script's upper text position. If bottommargin is given,
+	% adjust only the lower edge by changing \textheight.
+	\MD@TextTop=\dimexpr
+	1in+\voffset+\topmargin+\headheight+\headsep
+	\relax
+	
+	\ifdefempty{\MDopt@bottommargin}
+	{\mdBottomMargin=\dimexpr\paperheight-\MD@TextTop-\textheight\relax}
+	{%%
+		\mdBottomMargin=\MDopt@bottommargin\relax
+		\ifdim\mdBottomMargin<0pt
+		\PackageError{mdlayout}
+		{Negative bottom margin}
+		{The bottommargin option must not be negative.}%%
+		\fi
+		\textheight=\dimexpr
+		\paperheight-\MD@TextTop-\mdBottomMargin
+		\relax
+		\ifdim\textheight<\baselineskip
+		\PackageError{mdlayout}
+		{Calculated text height is too small}
+		{Reduce bottommargin or use a taller paper size.}%%
+		\fi
+	}%%
+	
+	\ifMDopt@showlayout
+	\MD@WriteLayoutToLog
+	\fi
+}
+
+\newcommand*{\MD@WideHeadingShift}{%
+	\dimexpr-\mdWideOffset+\MD@HeadingAreaOffset\relax
+}
+
+% --------------------------------------------------------------------------
+% Diagnostic information
+% --------------------------------------------------------------------------
+
+\newcommand*{\MD@WriteLayoutToLog}{%
+	\PackageInfo{mdlayout}{%
+		\MessageBreak
+		========================================\MessageBreak
+		mdlayout calculated geometry\MessageBreak
+		========================================\MessageBreak
+		Paper width       = \the\paperwidth\MessageBreak
+		Paper height      = \the\paperheight\MessageBreak
+		Original text width = \the\MD@OriginalTextWidth\MessageBreak
+		Text width        = \the\mdTextWidth\MessageBreak
+		Text height       = \the\textheight\MessageBreak
+		----------------------------------------\MessageBreak
+		Margin width      = \the\mdMarginWidth\MessageBreak
+		Gutter width      = \the\mdGutterWidth\MessageBreak
+		Wide offset       = \the\mdWideOffset\MessageBreak
+		Full width        = \the\mdFullWidth\MessageBreak
+		----------------------------------------\MessageBreak
+		Full left edge    = \the\mdFullLeft\MessageBreak
+		Full right edge   = \the\mdFullRight\MessageBreak
+		Margin left edge  = \the\mdMarginLeft\MessageBreak
+		Margin right edge = \the\mdMarginRight\MessageBreak
+		Text left edge    = \the\mdTextLeft\MessageBreak
+		Text right edge   = \the\mdTextRight\MessageBreak
+		----------------------------------------\MessageBreak
+		Right margin      = \the\mdRightMargin\MessageBreak
+		Min left margin   = \the\mdMinLeftMargin\MessageBreak
+		Bottom margin     = \the\mdBottomMargin\MessageBreak
+		HalfArea offset   = \the\mdHalfOffset\MessageBreak
+		HalfArea width    = \the\mdHalfWidth\MessageBreak
+		========================================%
+	}%
+}
+
+% ==========================================================
+% ==========================================================
+% Area environments
+%
+% TextArea       : normal text width
+% HalfArea       : extends into half of the margin area
+% FullArea       : extends into the complete margin area
+% DirectoryArea  : semantic alias of HalfArea for directories
+%                  (ToC, LoF, LoT, bibliography, glossary, index)
+%
+% All area environments automatically compensate wide headings.
+% ==========================================================
+
+% ==========================================================
+% Text areas
+% ==========================================================
+
+\newenvironment{HalfArea}
+{%
+	\par
+	\begingroup
+	\MD@HeadingAreaOffset=\dimexpr\mdWideOffset/2\relax
+	\begin{adjustwidth}
+		{-\dimexpr\mdWideOffset/2\relax}
+		{0pt}%
+	}
+	{%
+	\end{adjustwidth}%
+	\endgroup
+	\par
+}
+
+\newenvironment{FullArea}
+{%
+	\par
+	\begingroup
+	\MD@HeadingAreaOffset=\mdWideOffset
+	\begin{adjustwidth}
+		{-\mdWideOffset}
+		{0pt}%
+	}
+	{%
+	\end{adjustwidth}%
+	\endgroup
+	\par
+}
+
+% ==========================================================
+% Directory area
+% ==========================================================
+
+\newenvironment{DirectoryArea}
+{%
+	\begin{HalfArea}
+	}
+	{%
+	\end{HalfArea}
+}
+
+% ==========================================================================
+% Synchronized MarginArea + TextArea
+%
+% Places two related objects side by side:
+%
+%   MarginArea        Gutter        TextArea
+%   ┌───────────┐                  ┌──────────────────────────────┐
+%   │ margin    │                  │ text                         │
+%   │ object    │                  │ object                       │
+%   └───────────┘                  └──────────────────────────────┘
+%
+% Both objects start at exactly the same vertical position.
+% ==========================================================================
+
+\newcommand{\SyncMarginAndTextArea}[2]{%
+	\par
+	\noindent
+	\hspace*{-\mdWideOffset}%
+	%
+	\begin{minipage}[t]{\mdMarginWidth}%
+		\vspace{0pt}%
+		#1%
+	\end{minipage}%
+	%
+	\hspace{\mdGutterWidth}%
+	%
+	\begin{minipage}[t]{\mdTextWidth}%
+		\vspace{0pt}%
+		#2%
+	\end{minipage}%
+	%
+	\par
+	\addvspace{\topsep}%
+}
+
+% ==========================================================================
+% SynchronizedMarginAndTextArea
+%
+% Environment form of mdlayout's synchronized MarginArea + TextArea layout.
+% The two minipages are unbreakable and therefore move together at a page
+% break, exactly like the existing \SyncMarginAndTextArea command.
+% ==========================================================================
+
+\newenvironment{SynchronizedMarginAndTextArea}
+{%
+	\par
+	\noindent
+	\hspace*{-\mdWideOffset}%
+	\ignorespaces
+}
+{%
+	\unskip
+	\par
+	\addvspace{\topsep}%
+}
+
+% ==========================================================================
+% TextInMarginArea
+%
+% Normal LaTeX in the fixed mdlayout MarginArea.
+% ==========================================================================
+
+\newenvironment{TextInMarginArea}
+{%
+	\begin{minipage}[t]{\mdMarginWidth}%
+		\vspace{0pt}%
+		\ignorespaces
+	}
+	{%
+		\unskip
+	\end{minipage}%
+	\hspace{\mdGutterWidth}%
+	\ignorespaces
+}
+
+% ==========================================================================
+% TextInTextArea
+%
+% Normal LaTeX in the normal mdlayout TextArea.
+% ==========================================================================
+
+\newenvironment{TextInTextArea}
+{%
+	\begin{minipage}[t]{\mdTextWidth}%
+		\vspace{0pt}%
+		\ignorespaces
+	}
+	{%
+		\unskip
+	\end{minipage}%
+	\ignorespaces
+}
+
+% ==========================================================================
+% VerbatimInTextArea
+%
+% Genuine verbatim material in the normal mdlayout TextArea.
+%
+% \VerbatimEnvironment MUST be the first operation in the begin code.  It
+% instructs fancyvrb/fvextra to use VerbatimInTextArea itself as the scanner
+% delimiter, so #, $, %, _, {, }, \, ~, etc. are read before normal TeX
+% tokenization can interpret them.
+% ==========================================================================
+
+\newenvironment{VerbatimInTextArea}
+{%
+	\VerbatimEnvironment
+	\begin{minipage}[t]{\mdTextWidth}%
+		\vspace{0pt}%
+		\begin{Verbatim}
+		}
+		{%
+		\end{Verbatim}%
+	\end{minipage}%
+	\ignorespaces
+}
+
+
+% --------------------------------------------------------------------------
+% MarginFigure
+%
+% Places a non-floating, referenceable figure in the fixed MarginArea,
+% i.e. the column to the left of TextArea and inside FullArea.
+%
+% Geometry:
+%
+%   MarginArea | Gutter | TextArea
+%
+% The figure is anchored at the current text position. It does not use
+% LaTeX's \marginpar mechanism, because MarginArea is not an outer margin.
+% MarginFigure is a non-floating figure placed at the exact source position. 
+% It is intended for small illustrations beside sufficiently long text passages.
+% The author is responsible for choosing a position that avoids collisions and
+% page overflow. 
+% For automatic placement, use the standard figure or widefigure environment.
+% --------------------------------------------------------------------------
+\newcommand*{\MD@MarginFigureFontSize}{\footnotesize}
+
+\DeclareCaptionFont{MDMarginFigureFont}{%
+	\MD@MarginFigureFontSize
+}
+
+\newsavebox{\MD@MarginFigureBox}
+
+\DeclareCaptionFont{MDMarginFigureFont}{%
+	\MD@MarginFigureFontSize
+}
+
+\newenvironment{MarginFigure}[1][\footnotesize]
+{%
+	\begin{lrbox}{\MD@MarginFigureBox}%
+		\begin{minipage}{\mdMarginWidth}%
+			\renewcommand*{\MD@MarginFigureFontSize}{#1}%
+			\centering
+			\captionsetup{%
+				type=figure,
+				font=MDMarginFigureFont,
+				textfont=MDMarginFigureFont,
+				format=plain,
+				justification=raggedright,
+				singlelinecheck=false,
+				width=\mdMarginWidth
+			}%
+		}
+		{%
+		\end{minipage}%
+	\end{lrbox}%
+	%
+	% Begin the associated text paragraph.
+	\par
+	\noindent
+	%
+	% Zero-width overlay at the fixed left edge of MarginArea.
+	\makebox[0pt][l]{%
+		\hspace*{%
+			-\dimexpr
+			\mdWideOffset
+			+\@totalleftmargin
+			\relax
+		}%
+		\raisebox{%
+			\dimexpr
+			\ht\strutbox
+			-\ht\MD@MarginFigureBox
+			\relax
+		}[0pt][0pt]{%
+			\usebox{\MD@MarginFigureBox}%
+		}%
+	}%
+	%
+	\ignorespacesafterend
+}
+
+% ==========================================================
+% Lower-case aliases
+% ==========================================================
+
+\let\halfarea\HalfArea
+\let\endhalfarea\endHalfArea
+
+\let\fullarea\FullArea
+\let\endfullarea\endFullArea
+
+\let\directoryarea\DirectoryArea
+\let\enddirectoryarea\endDirectoryArea
+
+
+\newenvironment{widearea}
+{\begin{FullArea}}
+	{\end{FullArea}}
+
+% ==========================================================
+% ==========================================================
+
+
+% --------------------------------------------------------------------------
+% Wide longtable context
+%
+% Provides FullArea geometry for longtable-based environments such as
+% longtable and xltabular.
+%
+% xltabular initializes \LTleft and \LTright when the environment starts.
+% Therefore the required FullArea alignment is injected into \LT@array,
+% after that initialization but before the table alignment is constructed.
+%
+% The caption package derives an additional caption offset from \LTleft.
+% Since \LTleft is intentionally negative here, the derived offset would
+% move the caption to the right a second time. The local caption hook
+% therefore resets this additional offset.
+% --------------------------------------------------------------------------
+
+\newenvironment{widelongtable}
+{%
+	\par
+	\begingroup
+	
+	\begin{adjustwidth}{-\mdWideOffset}{0pt}%
+		
+		% Present FullArea as the local typesetting area.
+		\textwidth=\linewidth
+		\columnwidth=\linewidth
+		\hsize=\linewidth
+		
+		% longtable/xltabular alignment:
+		%
+		% This patch is local because widelongtable starts a group.
+		\@ifundefined{LT@array}
+		{%
+			\PackageError{mdlayout}
+			{The longtable package is not loaded}
+			{Load longtable or xltabular before using widelongtable.}%
+		}
+		{%
+			\pretocmd{\LT@array}
+			{%
+				\LTleft=-\mdWideOffset\relax
+				\LTright=0pt\relax
+			}
+			{}
+			{%
+				\PackageError{mdlayout}
+				{Unable to configure wide longtable alignment}
+				{The internal longtable command \string\LT@array could not be patched.}%
+			}%
+		}%
+		
+		% caption/ltcaption compatibility.
+		\@ifundefined{caption@LT@config}
+		{}
+		{%
+			\let\MD@SavedCaptionLTConfig\caption@LT@config
+			
+			\renewcommand*\caption@LT@config{%
+				\MD@SavedCaptionLTConfig
+				\xdef\caption@LTleft{0pt}%
+				\xdef\caption@LTright{0pt}%
+				\xdef\caption@LTfmt{@{}l@{}}%
+			}%
+		}%
+	}
+	{%
+	\end{adjustwidth}%
+	\endgroup
+	\par
+}
+
+	
+
+% MarginArea occupies only the usable margin portion and excludes the gutter.
+\newenvironment{MarginArea}
+{\par\begin{adjustwidth}
+		{-\mdWideOffset}
+		{\dimexpr\mdTextWidth+\mdGutterWidth\relax}}
+	{\end{adjustwidth}\par}
+
+\newenvironment{marginarea}
+{\begin{MarginArea}}
+	{\end{MarginArea}}
+
+\newenvironment{FullCenter}
+{\begin{FullArea}\centering}
+	{\par\end{FullArea}}
+
+\newenvironment{widecenter}
+{\begin{FullCenter}}
+	{\end{FullCenter}}
+
+\newenvironment{MarginCenter}
+{\begin{MarginArea}\centering}
+	{\par\end{MarginArea}}
+
+\newenvironment{margincenter}
+{\begin{MarginCenter}}
+	{\end{MarginCenter}}
+
+\newcommand{\fullcenter}[1]{%
+	\begin{FullCenter}#1\end{FullCenter}%
+}
+
+\newcommand{\marginbox}[1]{%
+	\begin{MarginArea}#1\end{MarginArea}%
+}
+
+\newcommand*{\fullrule}[1][0.4pt]{%
+	\begin{FullArea}
+		\noindent\rule{\linewidth}{#1}%
+	\end{FullArea}%
+}
+
+% --------------------------------------------------------------------------
+% Full-width document title
+%
+% KOMA-Script remains responsible for all title semantics and title elements.
+% mdlayout changes only the horizontal area used by \maketitle and by
+% explicit titlepage environments.
+% --------------------------------------------------------------------------
+
+\newif\ifMD@InTitlePage
+\MD@InTitlePagefalse
+
+\newif\ifMD@WrapMakeTitle
+\MD@WrapMakeTitlefalse
+
+\newcommand*{\MD@UseFullTitlePageWidth}{%
+	\oddsidemargin=\dimexpr
+		\mdFullLeft-1in-\hoffset
+	\relax
+	\evensidemargin=\oddsidemargin
+	\textwidth=\mdFullWidth
+	\columnwidth=\textwidth
+	\hsize=\columnwidth
+	\linewidth=\hsize
+}
+
+\newcommand*{\MD@InstallWideTitle}{%
+	% Optional company information is title metadata.  Keep KOMA-Script's
+	% complete title machinery and place the company directly below author.
+	\ifx\MD@Company\@empty
+	\else
+		\g@addto@macro\@author{%
+			\\[.5em]%
+			{\usekomafont{author}\MD@Company}%
+		}%
+	\fi
+
+	% KOMA-Script cover pages derive their horizontal geometry from these
+	% macros. Point them at the current FullArea.
+	\@ifundefined{coverpageleftmargin}
+	{}
+	{%
+		\renewcommand*{\coverpageleftmargin}{%
+			\dimexpr\mdFullLeft-\hoffset\relax
+		}%
+	}%
+	\@ifundefined{coverpagerightmargin}
+	{}
+	{%
+		\renewcommand*{\coverpagerightmargin}{%
+			\dimexpr\paperwidth+\hoffset-\mdFullRight\relax
+		}%
+	}%
+
+	% Every titlepage uses the FullArea when widetitle=true.
+	%
+	% Append the geometry change to \titlepage itself instead of using
+	% \AtBeginEnvironment.  KOMA-Script therefore performs the page break
+	% starting the title page before mdlayout changes the horizontal geometry.
+	% This prevents a preceding page (for example one containing \maketitle)
+	% from being affected.
+	%
+	% The titlepage environment is grouped, so the original geometry is
+	% restored automatically when the environment ends.
+	\apptocmd{\titlepage}{%
+		\MD@InTitlePagetrue
+		\MD@UseFullTitlePageWidth
+	}
+	{}
+	{%
+		\PackageWarningNoLine{mdlayout}{%
+			Could not patch titlepage for widetitle%
+		}%
+	}%
+
+	% Decorative article-title rules for scrartcl.
+	%
+	% KOMA-Script's in-page \@maketitle is used only for titlepage=false.
+	% The rules frame the title and subtitle, while subject, author, date,
+	% publishers, and dedication retain KOMA-Script's own layout.
+	\@ifclassloaded{scrartcl}{%
+		\patchcmd{\@maketitle}
+		{%
+			{\usekomafont{title}{\huge \@title \par}}%
+		}
+		{%
+			\ifdim\MDopt@articletitlerule>0pt\relax
+				\MD@HeadingRule{\MDopt@articletitlerule}%
+				\par\nobreak
+				\vspace{\MDopt@articletitlerulegap}%
+			\fi
+			{\usekomafont{title}{\huge \@title \par}}%
+		}
+		{}
+		{%
+			\PackageWarningNoLine{mdlayout}{%
+				Could not insert upper article-title rule%
+			}%
+		}%
+
+		\patchcmd{\@maketitle}
+		{%
+			{\ifx\@subtitle\@empty\else\usekomafont{subtitle}\@subtitle\par\fi}%
+			\vskip 1em
+		}
+		{%
+			{\ifx\@subtitle\@empty\else\usekomafont{subtitle}\@subtitle\par\fi}%
+			\ifdim\MDopt@articletitlerule>0pt\relax
+				\par\nobreak
+				\vspace{\MDopt@articletitlerulegap}%
+				\MD@HeadingRule{\MDopt@articletitlerule}%
+			\fi
+			\vskip 1em
+		}
+		{}
+		{%
+			\PackageWarningNoLine{mdlayout}{%
+				Could not insert lower article-title rule%
+			}%
+		}%
+	}{}%
+
+	% In-page title (normally scrartcl with titlepage=false).
+	%
+	% If \@maketitle is executed inside a titlepage, that page already uses
+	% FullArea geometry and must not be shifted a second time.
+	\pretocmd{\@maketitle}{%
+		\ifMD@InTitlePage
+			\MD@WrapMakeTitlefalse
+		\else
+			\MD@WrapMakeTitletrue
+			\begin{FullArea}%
+			\setlength{\textwidth}{\linewidth}%
+			\setlength{\columnwidth}{\linewidth}%
+			\setlength{\hsize}{\linewidth}%
+		\fi
+	}
+	{}
+	{%
+		\PackageWarningNoLine{mdlayout}{%
+			Could not patch \string\@maketitle\space for widetitle%
+		}%
+	}%
+
+	\apptocmd{\@maketitle}{%
+		\ifMD@WrapMakeTitle
+			\end{FullArea}%
+		\fi
+	}
+	{}
+	{%
+		\PackageWarningNoLine{mdlayout}{%
+			Could not close FullArea in \string\@maketitle%
+		}%
+	}%
+}
+
+% --------------------------------------------------------------------------
+% Full-width captions and floats
+% --------------------------------------------------------------------------
+
+% Only the caption receives a local paragraph box. The figure or table body
+% remains unboxed.
+\newcommand*{\MD@WideCaptionNoOpt}[1]{%
+	\par\noindent
+	\parbox{\linewidth}{\MD@OriginalCaption{#1}}%
+}
+
+\newcommand*{\MD@WideCaptionOpt}[2][]{%
+	\par\noindent
+	\parbox{\linewidth}{\MD@OriginalCaption[#1]{#2}}%
+}
+
+\newcommand*{\MD@InstallWideCaption}{%
+	\let\MD@OriginalCaption\caption
+	\renewcommand*{\caption}{%
+		\@ifnextchar[
+		{\MD@WideCaptionOpt}
+		{\MD@WideCaptionNoOpt}%
+	}%
+}
+
+\newenvironment{widefigure}[1][tbp]
+{%
+	\begin{figure}[#1]%
+		\begin{FullArea}%
+			\centering
+		}
+		{%
+			\par
+		\end{FullArea}%
+	\end{figure}%
+}
+
+\newenvironment{widetable}[1][tbp]
+{%
+	\begin{table}[#1]%
+		\begin{FullArea}%
+			\centering
+		}
+		{%
+			\par
+		\end{FullArea}%
+	\end{table}%
+}
+
+% ============================================================================
+% Printout subsystem
+% ============================================================================
+
+\RequirePackage{mdlayout-printout}
+
+% ============================================================================
+% ReferenceTable subsystem
+% ============================================================================
+
+\RequirePackage{mdlayout-referencetable}
+
+% --------------------------------------------------------------------------
+% Version check
+% --------------------------------------------------------------------------
+
+\def\MD@ExtractPackageVersion#1 #2 #3\@nil{#2}
+
+\newcommand*\MD@CheckPackageVersion[3]{%
+	\@ifpackageloaded{#1}{%
+		
+		\edef\MD@PackageInfo{%
+			\csname ver@#1.sty\endcsname
+		}%
+		
+		\edef\MD@ActualVersion{%
+			\expandafter\MD@ExtractPackageVersion
+			\MD@PackageInfo\space\@nil
+		}%
+		
+		\edef\MD@ExpectedVersion{#2}%
+		
+		\ifdefstrequal{\MD@ActualVersion}{\MD@ExpectedVersion}
+		{%
+			% Versions match
+		}
+		{%
+			\PackageError{mdlayout}{%
+				Incompatible version of #1.sty\MessageBreak
+				Required version: \MD@ExpectedVersion\MessageBreak
+				Installed version: \MD@ActualVersion
+			}{%
+				The mdlayout package files are inconsistent.\MessageBreak
+				Please install #1.sty version \MD@ExpectedVersion\MessageBreak
+				or install a matching complete mdlayout package set.\MessageBreak
+				#3%
+			}%
+		}%
+		
+	}{%
+		\PackageError{mdlayout}{%
+			Required package #1.sty is not loaded\MessageBreak
+			Required version: #2
+		}{%
+			The mdlayout package files are incomplete.\MessageBreak
+			Please install the complete matching mdlayout package set.\MessageBreak
+			#3%
+		}%
+	}%
+}
+
+\MD@CheckPackageVersion
+{mdlayout-printout}
+{\mdlayoutPrintoutVersion}
+{Please install the matching mdlayout-printout.sty.}
+
+\MD@CheckPackageVersion
+{mdlayout-referencetable}
+{\mdlayoutReferenceTableVersion}
+{Please install the matching mdlayout-referencetable.sty.}
+
+
+% --------------------------------------------------------------------------
+% Wide KOMA-Script headings and optional IBM-style rules
+%
+% Only geometry and decorative rules are changed. Numbering, chapter
+% prefixes, language, fonts, and all semantic heading behaviour remain under
+% KOMA-Script control.
+% --------------------------------------------------------------------------
+
+\newcommand*{\MD@HeadingRule}[1]{%
+	\begingroup
+	\color{\MDopt@headingrulecolor}%
+	\noindent\rule{\linewidth}{#1}%
+	\endgroup
+}
+
+\newcommand*{\MD@ChapterHeadingContents}[4]{%
+	\ifdim\MDopt@chapterrule>0pt\relax
+	\MD@HeadingRule{\MDopt@chapterrule}%
+	\par\nobreak
+	\vspace{\MDopt@chapterrulegap}%
+	\fi
+	#1{#2}{#3}{#4}%
+}
+
+\newcommand*{\MD@SectionHeadingContents}[5]{%
+	#1{#2}{#3}{#4}{#5}%
+	\ifstrequal{#2}{section}{%
+		\ifdim\MDopt@sectionrule>0pt\relax
+		\par\nobreak
+		\vspace{\MDopt@sectionrulegap}%
+		\MD@HeadingRule{\MDopt@sectionrule}%
+		\fi
+	}{}%
+}
+
+\newcommand*{\MD@InstallWideHeadings}{%
+	
+	% Part headings.
+	\@ifundefined{partlinesformat}
+	{}
+	{%
+		\renewcommand*{\partlinesformat}[3]{%
+			\hspace*{\MD@WideHeadingShift}%
+			\parbox[t]{\mdFullWidth}{%
+				\raggedpart
+				\@hangfrom{##2}{##3}%
+			}%
+		}%
+	}%
+	
+	\@ifundefined{partlineswithprefixformat}
+	{}
+	{%
+		\renewcommand*{\partlineswithprefixformat}[3]{%
+			\hspace*{\MD@WideHeadingShift}%
+			\parbox[t]{\mdFullWidth}{%
+				\raggedpart
+				##2##3%
+			}%
+		}%
+	}%
+	
+	% Chapter headings without a separate prefix line. This path is also used
+	% for unnumbered chapter-level headings such as the table of contents,
+	% list of figures, and list of tables.
+	\@ifundefined{chapterlinesformat}
+	{}
+	{%
+		\renewcommand*{\chapterlinesformat}[3]{%
+			\hspace*{\MD@WideHeadingShift}%
+			\parbox[t]{\mdFullWidth}{%
+				\raggedchapter
+				\ifdim\MDopt@chapterrule>0pt\relax
+				\MD@HeadingRule{\MDopt@chapterrule}%
+				\par\nobreak
+				\vspace{\MDopt@chapterrulegap}%
+				\fi
+				\@hangfrom{##2}{##3}%
+			}%
+		}%
+	}%
+	
+	% Chapter headings with KOMA-Script's separate chapter-prefix line.
+	\@ifundefined{chapterlineswithprefixformat}
+	{}
+	{%
+		\renewcommand*{\chapterlineswithprefixformat}[3]{%
+			\hspace*{\MD@WideHeadingShift}%
+			\parbox[t]{\mdFullWidth}{%
+				\raggedchapter
+				\ifdim\MDopt@chapterrule>0pt\relax
+				\MD@HeadingRule{\MDopt@chapterrule}%
+				\par\nobreak
+				\vspace{\MDopt@chapterrulegap}%
+				\fi
+				##2##3%
+			}%
+		}%
+	}%
+	
+	% Section-like headings. Only section receives a rule; lower levels keep
+	% KOMA-Script's normal appearance.
+	\@ifundefined{sectionlinesformat}
+	{}
+	{%
+		\renewcommand*{\sectionlinesformat}[4]{%
+			\hspace*{\MD@WideHeadingShift}%
+			\parbox[t]{\mdFullWidth}{%
+				\raggedsection
+				\ifstrequal{##1}{section}
+				{%
+					\ifdim\MDopt@sectionrule>0pt\relax
+					\MD@HeadingRule{\MDopt@sectionrule}%
+					\par\nobreak
+					\vspace{\MDopt@sectionrulegap}%
+					\fi
+				}
+				{}%
+				\@hangfrom{\hskip ##2##3}{##4}%
+			}%
+		}%
+	}%
+}
+
+% --------------------------------------------------------------------------
+% Full-width page headers and footers
+% --------------------------------------------------------------------------
+
+\newcommand*{\MD@InstallWideHeadFoot}{%
+	\KOMAoptions{%
+		headwidth=\mdFullWidth:-\mdWideOffset:\mdWideOffset,
+		footwidth=\mdFullWidth:-\mdWideOffset:\mdWideOffset,
+		headsepline=\MDopt@headsepline
+	}%
+	
+	\ifMDopt@plainheadsepline
+	\KOMAoptions{plainheadsepline=true}%
+	\else
+	\KOMAoptions{plainheadsepline=false}%
+	\fi
+}
+
+\newcommand*{\MD@InstallPageStyle}{%
+	\clearpairofpagestyles
+	
+	\@ifclassloaded{scrartcl}
+	{\automark[subsection]{section}}
+	{\automark[section]{chapter}}%
+	
+	\if@twoside
+	% Normal even pages:
+	% page number on the left, running heading on the right.
+	\lehead[]{\pagemark}%
+	\rehead[]{\headmark}%
+	
+	% Normal odd pages:
+	% running heading on the left, page number on the right.
+	\lohead[]{\headmark}%
+	\rohead[]{\pagemark}%
+	\else
+	% Normal one-sided pages:
+	% running heading on the left, page number on the right.
+	\lohead[]{\headmark}%
+	\rohead[]{\pagemark}%
+	\fi
+	
+	% Chapter-opening pages use plain.scrheadings:
+	% no running header, only a centered page number in the footer.
+	\cfoot[\pagemark]{}%
+	
+	% Optional company information for scrbook and scrreprt.  It is always
+	% placed at the physical left side of the footer, below MarginArea.
+	% The optional arguments also show it on plain chapter-opening pages.
+	% Existing headers, including their page numbers, are not changed.
+	\@ifclassloaded{scrartcl}{}{%
+		\ifx\MD@Company\@empty
+		\else
+			\lefoot[\MD@Company]{\MD@Company}%
+			\lofoot[\MD@Company]{\MD@Company}%
+		\fi
+	}%
+	
+	\pagestyle{scrheadings}%
+}
+
+% --------------------------------------------------------------------------
+% Public recalculation command
+% --------------------------------------------------------------------------
+
+\newcommand*{\mdlayoutrecalculate}{%
+	\MD@OriginalTextWidth=\textwidth
+	\MD@OriginalOddSideMargin=\oddsidemargin
+	\MD@OriginalEvenSideMargin=\evensidemargin
+	
+	\MD@CalculateLayout
+	
+	\ifMDopt@wideheadings
+	\MD@InstallWideHeadings
+	\fi
+	
+	\ifMDopt@wideheadfoot
+	\MD@InstallWideHeadFoot
+	\MD@InstallPageStyle
+	\fi
+}
+
+% --------------------------------------------------------------------------
+% Display dimensions in the document
+% --------------------------------------------------------------------------
+
+\newcommand*{\ShowMDLayout}{%
+	\begingroup
+	\small\ttfamily
+	\begin{FullArea}
+		\begin{tabular}{@{}ll@{}}
+			Paper width:       & \the\paperwidth       \\
+			Full width:        & \the\mdFullWidth      \\
+			Full left:         & \the\mdFullLeft       \\
+			Full right:        & \the\mdFullRight      \\
+			Margin width:      & \the\mdMarginWidth    \\
+			Margin left:       & \the\mdMarginLeft     \\
+			Margin right:      & \the\mdMarginRight    \\
+			Gutter width:      & \the\mdGutterWidth    \\
+			Text width:        & \the\mdTextWidth      \\
+			Text left:         & \the\mdTextLeft       \\
+			Text right:        & \the\mdTextRight      \\
+			Right page margin: & \the\mdRightMargin \\
+			Text height:        & \the\textheight \\
+			Bottom margin:      & \the\mdBottomMargin
+		\end{tabular}
+		
+		\medskip
+		\noindent\rule{\linewidth}{0.4pt}
+		
+		\noindent
+		Left edge of FullArea\hfill Right edge of FullArea
+	\end{FullArea}
+	\endgroup
+}
+
+% --------------------------------------------------------------------------
+% Compatibility warnings
+% --------------------------------------------------------------------------
+
+\AtBeginDocument{%
+	\@ifpackageloaded{fancyhdr}{%
+		\PackageWarningNoLine{mdlayout}{%
+			Package `fancyhdr' is not supported.\MessageBreak
+			Use `scrlayer-scrpage' instead.%
+		}%
+	}{}%
+}
+
+% --------------------------------------------------------------------------
+% Initialization
+% --------------------------------------------------------------------------
+
+\AtBeginDocument{%
+	\MD@OriginalTextWidth=\textwidth
+	\MD@OriginalOddSideMargin=\oddsidemargin
+	\MD@OriginalEvenSideMargin=\evensidemargin
+	
+	\MD@CalculateLayout
+	
+	\ifMDopt@widetitle
+	\MD@InstallWideTitle
+	\fi
+	
+	\ifMDopt@wideheadings
+	\MD@InstallWideHeadings
+	\fi
+	
+	\ifMDopt@wideheadfoot
+	\MD@InstallWideHeadFoot
+	\MD@InstallPageStyle
+	\fi
+}
+
+% --------------------------------------------------------------------------
+% Frame for next page
+%
+% Draws a frame on the next page to be shipped out.
+% The frame is positioned relative to the physical paper, independently
+% of TextArea, MarginArea and FullArea.
+% --------------------------------------------------------------------------
+
+\define@key{MDPageFrame}{color}{%
+	\def\MD@PageFrameColor{#1}%
+}
+
+\define@key{MDPageFrame}{width}{%
+	\def\MD@PageFrameWidth{#1}%
+}
+
+\define@key{MDPageFrame}{inset}{%
+	\def\MD@PageFrameInset{#1}%
+}
+
+\newcommand*{\MD@DrawPageFrame}[3]{%
+	\begingroup
+	\color{#1}%
+	\linethickness{#2}%
+	\put(
+	#3,
+	-\dimexpr\paperheight-#3\relax
+	){%
+		\framebox(
+		\dimexpr\paperwidth-#3-#3\relax,
+		\dimexpr\paperheight-#3-#3\relax
+		){}%
+	}%
+	\endgroup
+}
+
+\newcommand*{\FrameForNextPage}[1][]{%
+	\def\MD@PageFrameColor{gray}%
+	\def\MD@PageFrameWidth{1.5pt}%
+	\def\MD@PageFrameInset{5mm}%
+	%
+	\setkeys{MDPageFrame}{#1}%
+	%
+	\edef\MD@Temp{%
+		\noexpand\AddToHookNext{shipout/background}{%
+			\noexpand\MD@DrawPageFrame
+			{\MD@PageFrameColor}%
+			{\MD@PageFrameWidth}%
+			{\MD@PageFrameInset}%
+		}%
+	}%
+	\MD@Temp
+}
+
+
+% --------------------------------------------------------------------------
+% Verbatim-like spaces for typewriter environment
+% --------------------------------------------------------------------------
+
+\begingroup
+\catcode`\ =\active
+\gdef\MD@TypewriterSpaces{%
+	\catcode`\ =\active
+	\def {\leavevmode\space}%
+}
+\endgroup
+
+\newenvironment{typewriter}
+{%
+	\par
+	\addvspace{\topsep}%
+	\begingroup
+	\ttfamily
+	\parindent=0pt
+	\parskip=0pt
+	\obeylines
+	\MD@TypewriterSpaces
+}
+{%
+	\par
+	\endgroup
+	\addvspace{\topsep}%
+	\ignorespacesafterend
+}
+
+\makeatother
+
+\newcommand{\mdSeeRight}[1][1]{%
+	\tikz[
+	baseline=-0.65ex,
+	scale=#1
+	]{%
+		% Blue sign
+		\fill[mdColorPrimary] (0,0) circle (2.8ex);
+		
+		% White arrow
+		\fill[white]
+		(-1.55ex, 0.35ex) --
+		( 0.20ex, 0.35ex) --
+		( 0.20ex, 0.90ex) --
+		( 1.60ex, 0.00ex) --
+		( 0.20ex,-0.90ex) --
+		( 0.20ex,-0.35ex) --
+		(-1.55ex,-0.35ex) --
+		cycle;
+	}%
+}
+
+\endinput

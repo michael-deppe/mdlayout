@@ -1,0 +1,993 @@
+% !TEX TS-program = lualatex
+% !TeX spellcheck = en_US
+% !TEX root = mdlayout.tex
+
+%%
+%% mdlayout-printout.sty
+%% Version 0.11.1
+%%
+%% Version 0.11.1
+%%   - recalculates layout geometry immediately before every Printout
+%%   - fixes zero-width geometry when loaded early by mdlayout.sty
+%%
+%% Version 0.11.0
+%%   - no dependency on mdlayout.sty
+%%   - standalone geometry uses \textwidth, \marginparwidth, and \marginparsep
+%%   - if mdlayout public dimensions are present, they are used automatically
+%%   - preserves exact mdlayout geometry when loaded from mdlayout.sty
+%%
+%% Copyright 2026 Prof. Dr. Michael Deppe
+%%
+%%               _ _                         _
+%% _ __ ___   __| | | __ _ _   _  ___  _   _| |_
+%%| '_ ` _ \ / _` | |/ _` | | | |/ _ \| | | | __|
+%%| | | | | | (_| | | (_| | |_| | (_) | |_| | |_
+%%|_| |_| |_|\__,_|_|\__,_|\__, |\___/ \__,_|\__|
+%%                         |___/
+%%
+%% mdlayout — Semantic layout framework for technical documentation.
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL),
+%% either version 1.3c of this license or (at your option)
+%% any later version.
+%%
+%% The latest version of this license is available at
+%%   https://www.latex-project.org/lppl.txt
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is
+%%   Michael Deppe.
+%%
+%% This work consists of the files
+%%   mdlayout.sty
+%%   mdlayout-printout.sty
+%%   mdlayout-referencetable.sty
+%%   mdpreamble.tex
+%%   mdlayout.cwl
+%%   mdlayout.md
+%%   mdlayout.tex
+%%   mdlayout.pdf
+%%   mdlayout-margin-logo.pdf
+%%   mdlayout.png
+%%   images.pdf
+%%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mdlayout-printout}
+  [2026/08/31 v0.11.1 Standalone virtual continuous-paper Printout]
+
+% ==========================================================================
+% Requirements
+% ==========================================================================
+
+\RequirePackage{fvextra}
+\RequirePackage{etoolbox}
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+
+\makeatletter
+
+% ==========================================================================
+% Standalone / mdlayout-compatible page geometry
+%
+% mdlayout-printout can be loaded on its own.  In that case the wide area is
+% derived from the ordinary LaTeX text and margin dimensions:
+%
+%   wide offset = marginparwidth + marginparsep
+%   full width  = textwidth + wide offset
+%
+% If mdlayout.sty has already established its public geometry, those values
+% are used instead.  This preserves exact compatibility when the package is
+% loaded by mdlayout.sty while removing the dependency for standalone use.
+% ==========================================================================
+
+\newdimen\MD@PrintoutTextWidth
+\newdimen\MD@PrintoutMarginWidth
+\newdimen\MD@PrintoutGutterWidth
+\newdimen\MD@PrintoutWideOffset
+\newdimen\MD@PrintoutFullWidth
+
+\newif\ifMD@PrintoutUseMDLayoutGeometry
+
+\newcommand*{\MD@PrintoutCalculateGeometry}{%
+  \MD@PrintoutUseMDLayoutGeometrytrue
+  \@ifundefined{mdFullWidth}{\MD@PrintoutUseMDLayoutGeometryfalse}{}
+  \@ifundefined{mdWideOffset}{\MD@PrintoutUseMDLayoutGeometryfalse}{}
+  %
+  \ifMD@PrintoutUseMDLayoutGeometry
+    \MD@PrintoutFullWidth=\mdFullWidth\relax
+    \MD@PrintoutWideOffset=\mdWideOffset\relax
+    \MD@PrintoutTextWidth=\dimexpr
+      \MD@PrintoutFullWidth-\MD@PrintoutWideOffset
+    \relax
+    \MD@PrintoutMarginWidth=0pt
+    \MD@PrintoutGutterWidth=0pt
+  \else
+    \MD@PrintoutTextWidth=\textwidth\relax
+    \MD@PrintoutMarginWidth=\marginparwidth\relax
+    \MD@PrintoutGutterWidth=\marginparsep\relax
+    \MD@PrintoutWideOffset=\dimexpr
+      \MD@PrintoutMarginWidth+\MD@PrintoutGutterWidth
+    \relax
+    \MD@PrintoutFullWidth=\dimexpr
+      \MD@PrintoutTextWidth+\MD@PrintoutWideOffset
+    \relax
+  \fi
+}
+
+% Establish an initial geometry.  This is recalculated immediately before
+% every Printout environment, because mdlayout may not have finished its
+% layout calculation when this package itself is loaded.
+\MD@PrintoutCalculateGeometry
+
+% ==========================================================================
+% Classic continuous-paper colours
+% ==========================================================================
+
+\definecolor{MDPrintoutDarkGreen}{RGB}{99,182,99}
+\definecolor{MDPrintoutLightGreen}{RGB}{219,240,219}
+
+\definecolor{MDPrintoutDarkBlue}{RGB}{65,182,255}
+\definecolor{MDPrintoutLightBlue}{RGB}{214,239,255}
+
+% ==========================================================================
+% Public defaults
+% ==========================================================================
+
+\def\MD@PaperHeightValue{60}
+
+\def\MD@FormType{green}
+\def\MD@FormBandLines{3}
+\def\MD@FormLightColor{MDPrintoutLightGreen}
+\def\MD@FormDarkColor{MDPrintoutDarkGreen}
+
+\def\MD@FeedLines{3}
+\def\MD@FitColumnsValue{0}
+
+\newif\ifMD@PunchHoles
+\MD@PunchHolesfalse
+
+\newif\ifMD@LineNumbers
+\MD@LineNumbersfalse
+
+% State required after the local Verbatim group.
+\newif\ifMD@FinalLineNumbers
+\MD@FinalLineNumbersfalse
+
+\def\MD@FinalDarkColor{MDPrintoutDarkGreen}
+
+\newif\ifMD@FormEnabled
+\MD@FormEnabledtrue
+
+% ==========================================================================
+% Public fancyvrb/fvextra keys
+% ==========================================================================
+
+\define@key{FV}{paperheight}{%
+  \def\MD@PaperHeightValue{#1}%
+}
+
+\define@key{FV}{bandlines}{%
+  \def\MD@FormBandLines{#1}%
+}
+
+\define@key{FV}{color}{%
+	\ifstrequal{#1}{none}{%
+		\MD@FormEnabledfalse
+	}{%
+		\MD@FormEnabledtrue
+		%
+		\ifstrequal{#1}{green}{%
+			\def\MD@FormLightColor{MDPrintoutLightGreen}%
+			\def\MD@FormDarkColor{MDPrintoutDarkGreen}%
+		}{%
+			\ifstrequal{#1}{blue}{%
+				\def\MD@FormLightColor{MDPrintoutLightBlue}%
+				\def\MD@FormDarkColor{MDPrintoutDarkBlue}%
+			}{%
+				\colorlet{MDPrintoutCustomLight}{#1}%
+				\colorlet{MDPrintoutCustomDark}{#1!65!black}%
+				%
+				\def\MD@FormLightColor{MDPrintoutCustomLight}%
+				\def\MD@FormDarkColor{MDPrintoutCustomDark}%
+			}%
+		}%
+	}%
+}
+
+% Backward-compatible alias.
+\define@key{FV}{bandcolor}{%
+  \setkeys{FV}{color=#1}%
+}
+
+\define@key{FV}{feedlines}{%
+  \def\MD@FeedLines{#1}%
+}
+
+\define@key{FV}{fitcolumns}{%
+  \def\MD@FitColumnsValue{#1}%
+}
+
+% ========================================================================== 
+% Printout form registry
+% ========================================================================== 
+
+\newcommand*{\MDDeclarePrintoutForm}[2]{%
+  \expandafter\def\csname MD@PrintoutForm@#1\endcsname{%
+    \setkeys{FV}{#2}%
+  }%
+}
+
+\newcommand*{\MD@ApplyPrintoutForm}[1]{%
+  \@ifundefined{MD@PrintoutForm@#1}{%
+    \PackageError{mdlayout-printout}
+      {Unknown Printout form `#1'}
+      {Define it with \string\MDDeclarePrintoutForm.}%
+  }{%
+    \csname MD@PrintoutForm@#1\endcsname
+  }%
+}
+
+\define@key{FV}{form}{%
+  \MD@ApplyPrintoutForm{#1}%
+}
+
+\define@key{FV}{punchholes}[true]{%
+  \ifstrequal{#1}{true}{%
+    \MD@PunchHolestrue
+  }{%
+    \ifstrequal{#1}{false}{%
+      \MD@PunchHolesfalse
+    }{%
+      \PackageError{mdlayout-printout}
+        {Invalid punchholes value `#1'}
+        {Use punchholes=true or punchholes=false.}%
+    }%
+  }%
+}
+
+\define@key{FV}{linenumbers}[true]{%
+  \ifstrequal{#1}{true}{%
+    \MD@LineNumberstrue
+  }{%
+    \ifstrequal{#1}{false}{%
+      \MD@LineNumbersfalse
+    }{%
+      \PackageError{mdlayout-printout}
+        {Invalid linenumbers value `#1'}
+        {Use linenumbers=true or linenumbers=false.}%
+    }%
+  }%
+}
+
+% ==========================================================================
+% Geometry
+%
+% No undocumented fvextra internals are used here.
+% The geometry is derived only from standard TeX font/strut dimensions.
+% ==========================================================================
+
+\newsavebox{\MD@BackgroundStructBox}
+
+\newdimen\MD@BackgroundHeight
+\newdimen\MD@BackgroundDepth
+
+\newdimen\MD@PaperEdgeThickness
+\newdimen\MD@PaperFormRuleThickness
+\newdimen\MD@PaperPerforationThickness
+
+\newdimen\MD@PaperTopOffset
+\newdimen\MD@PaperBandOffset
+
+\newcommand*{\MD@GeometryInit}{%
+  %
+  % Measure the current text-line strut after fontsize/fitcolumns selection.
+  %
+  \sbox{\MD@BackgroundStructBox}{\hbox{\strut}}%
+  %
+  \MD@BackgroundHeight=\ht\MD@BackgroundStructBox
+  \MD@BackgroundDepth=\dp\MD@BackgroundStructBox
+  %
+  % Position of horizontal rules relative to the line being rendered.
+  %
+  % Top and band boundaries coincide exactly with the upper edge of the
+  % measured line strut. No additional baseline shift is required.
+  %
+  \MD@PaperTopOffset=\MD@BackgroundHeight
+  \MD@PaperBandOffset=\MD@BackgroundHeight
+  %
+  % Strong beginning/end edges.
+  \MD@PaperEdgeThickness=.45pt
+  %
+  % Fine preprinted form rules.
+  \MD@PaperFormRuleThickness=.25pt
+  %
+  % Fine virtual tear-off perforation.
+  \MD@PaperPerforationThickness=.25pt
+}
+
+% ==========================================================================
+% Paper Engine
+% ==========================================================================
+
+\newcount\MD@PaperHeight
+\newcount\MD@PaperNumber
+\newcount\MD@PaperLine
+\newcount\MD@AbsoluteLine
+
+\newcommand*{\MD@PaperValidate}{%
+  \MD@PaperHeight=\MD@PaperHeightValue\relax
+  %
+  \ifnum\MD@PaperHeight<1\relax
+    \PackageError{mdlayout-printout}
+      {Invalid paperheight value}
+      {paperheight must be an integer between 1 and 999.}%
+    \MD@PaperHeight=60\relax
+  \fi
+  %
+  \ifnum\MD@PaperHeight>999\relax
+    \PackageError{mdlayout-printout}
+      {Invalid paperheight value}
+      {paperheight must be an integer between 1 and 999.}%
+    \MD@PaperHeight=999\relax
+  \fi
+}
+
+\newcommand*{\MD@PaperCalculate}{%
+  \MD@PaperValidate
+  %
+  % Absolute zero-based line.
+  \MD@AbsoluteLine=\c@FancyVerbLine
+  \advance\MD@AbsoluteLine by -1
+  %
+  % Virtual paper number, one based.
+  \MD@PaperNumber=\MD@AbsoluteLine
+  \divide\MD@PaperNumber by \MD@PaperHeight
+  \advance\MD@PaperNumber by 1
+  %
+  % Local paper line, one based.
+  \MD@PaperLine=\MD@PaperNumber
+  \advance\MD@PaperLine by -1
+  \multiply\MD@PaperLine by \MD@PaperHeight
+  \multiply\MD@PaperLine by -1
+  \advance\MD@PaperLine by \MD@AbsoluteLine
+  \advance\MD@PaperLine by 1
+}
+
+% ==========================================================================
+% Form Engine
+% ==========================================================================
+
+\newcount\MD@FormBandSize
+\newcount\MD@FormBandNumber
+\newcount\MD@FormBandPosition
+\newcount\MD@FormBandBase
+
+\newcommand*{\MD@FormValidate}{%
+	\MD@FormBandSize=\MD@FormBandLines\relax
+	%
+	\ifnum\MD@FormBandSize<0\relax
+	\PackageError{mdlayout-printout}
+	{Invalid bandlines value}
+	{bandlines must be zero or a positive integer.}%
+	\MD@FormBandSize=0\relax
+	\fi
+	%
+	\ifnum\MD@FormBandSize=0\relax
+	\MD@FormEnabledfalse
+	\fi
+}
+
+\newcommand*{\MD@FormCalculate}{%
+  \MD@PaperCalculate
+  \MD@FormValidate
+  %
+  % Zero-based band number.
+  \MD@FormBandNumber=\MD@PaperLine
+  \advance\MD@FormBandNumber by -1
+  \divide\MD@FormBandNumber by \MD@FormBandSize
+  %
+  % Zero-based position inside current band.
+  \MD@FormBandPosition=\MD@PaperLine
+  \advance\MD@FormBandPosition by -1
+  %
+  \MD@FormBandBase=\MD@FormBandPosition
+  \divide\MD@FormBandBase by \MD@FormBandSize
+  \multiply\MD@FormBandBase by \MD@FormBandSize
+  %
+  \advance\MD@FormBandPosition by -\MD@FormBandBase
+}
+
+\newcommand*{\MD@FormSelectBackground}{%
+	\MD@FormValidate
+	%
+	\ifMD@FormEnabled
+	%
+	\MD@FormCalculate
+	%
+	\ifodd\MD@FormBandNumber
+	\def\FancyVerbBackgroundColor{white}%
+	\else
+	\def\FancyVerbBackgroundColor{\MD@FormLightColor}%
+	\fi
+	\else
+	\def\FancyVerbBackgroundColor{white}%
+	\fi
+}
+
+\newcommand*{\MD@FormBandRule}{%
+  \begingroup
+    \color{\MD@FormDarkColor}%
+    \rule{\MD@PrintoutFullWidth}{\MD@PaperFormRuleThickness}%
+  \endgroup
+}
+
+\newcommand*{\MD@FormRenderBandBoundary}{%
+	\ifMD@FormEnabled
+	\MD@FormCalculate
+	%
+	\ifnum\MD@FormBandPosition=0\relax
+	\ifnum\MD@PaperLine>1\relax
+	\makebox[0pt][l]{%
+		\raisebox{\MD@PaperBandOffset}[0pt][0pt]{%
+			\MD@FormBandRule
+		}%
+	}%
+	\fi
+	\fi
+	\fi
+}
+
+% ==========================================================================
+% Feed Engine
+% ==========================================================================
+
+\newcount\MD@FeedSize
+\newcount\MD@FeedPosition
+\newcount\MD@FeedBase
+\newcount\MD@FeedHolePosition
+
+\newcommand*{\MD@FeedValidate}{%
+  \MD@FeedSize=\MD@FeedLines\relax
+  \ifnum\MD@FeedSize<0\relax
+    \PackageError{mdlayout-printout}
+      {Invalid feedlines value}
+      {feedlines must be zero or a positive integer.}%
+    \MD@FeedSize=0\relax
+  \fi
+}
+
+\newcommand*{\MD@FeedCalculate}{%
+  \MD@PaperCalculate
+  \MD@FeedValidate
+  \ifnum\MD@FeedSize>0\relax
+    \MD@FeedPosition=\MD@PaperLine
+    \advance\MD@FeedPosition by -1
+    \MD@FeedBase=\MD@FeedPosition
+    \divide\MD@FeedBase by \MD@FeedSize
+    \multiply\MD@FeedBase by \MD@FeedSize
+    \advance\MD@FeedPosition by -\MD@FeedBase
+    \MD@FeedHolePosition=\MD@FeedSize
+    \advance\MD@FeedHolePosition by -1
+    \divide\MD@FeedHolePosition by 2
+  \fi
+}
+
+% ==========================================================================
+% Fit Engine
+% ==========================================================================
+
+\newcount\MD@FitColumns
+
+\newdimen\MD@FitCharWidth
+\newdimen\MD@FitRequiredWidth
+\newdimen\MD@FitAvailableWidth
+\newdimen\MD@FitMaxFontSize
+\newdimen\MD@FitMaxBaselineSkip
+\newdimen\MD@FitFontSize
+\newdimen\MD@FitBaselineSkip
+
+\def\MD@FitScale{1}
+
+\newcommand*{\MD@FitApply}{%
+  \MD@FitColumns=\MD@FitColumnsValue\relax
+  %
+  \ifnum\MD@FitColumns<0\relax
+    \PackageError{mdlayout-printout}
+      {Invalid fitcolumns value}
+      {fitcolumns must be zero or a positive integer.}%
+    \MD@FitColumns=0\relax
+  \fi
+  %
+  \ifnum\MD@FitColumns>0\relax
+    \MD@FitMaxFontSize=\f@size pt\relax
+    \MD@FitMaxBaselineSkip=\baselineskip
+    %
+    \setbox\z@=\hbox{M}%
+    \MD@FitCharWidth=\wd\z@
+    %
+    \MD@FitRequiredWidth=\MD@FitCharWidth
+    \multiply\MD@FitRequiredWidth by \MD@FitColumns
+    %
+    \MD@FitAvailableWidth=\dimexpr\MD@PrintoutFullWidth-.5pt\relax
+    %
+    \ifdim\MD@FitRequiredWidth>\MD@FitAvailableWidth
+      \Gscale@div
+        \MD@FitScale
+        {\MD@FitAvailableWidth}
+        {\MD@FitRequiredWidth}%
+      %
+      \MD@FitFontSize=\MD@FitScale\MD@FitMaxFontSize
+      \MD@FitBaselineSkip=\MD@FitScale\MD@FitMaxBaselineSkip
+      %
+      \fontsize
+        {\the\MD@FitFontSize}
+        {\the\MD@FitBaselineSkip}%
+      \selectfont
+    \fi
+  \fi
+}
+
+% ==========================================================================
+% Number / tractor-feed geometry
+% ==========================================================================
+
+\newdimen\MD@NumberInnerOffset
+\newdimen\MD@NumberOuterOffset
+\newdimen\MD@NumberWidth
+
+\newdimen\MD@LeftHoleOffsetWithNumbers
+\newdimen\MD@RightHoleOffsetWithNumbers
+\newdimen\MD@LeftHoleOffsetWithoutNumbers
+\newdimen\MD@RightHoleOffsetWithoutNumbers
+
+\MD@NumberInnerOffset=1mm
+\MD@NumberOuterOffset=4mm
+
+\MD@NumberWidth=\dimexpr
+  \MD@NumberOuterOffset-\MD@NumberInnerOffset
+\relax
+
+% Optical left/right corrections.
+\MD@LeftHoleOffsetWithNumbers=5.5mm
+\MD@RightHoleOffsetWithNumbers=5.5mm
+
+\MD@LeftHoleOffsetWithoutNumbers=2.2mm
+\MD@RightHoleOffsetWithoutNumbers=2.2mm
+
+% ==========================================================================
+% Number Engine
+% ==========================================================================
+
+\newcommand*{\MD@NumberFont}{%
+  \sffamily
+  \fontsize{4.6pt}{5pt}\selectfont
+}
+
+\newcommand*{\MD@NumberText}[1]{%
+  \begingroup
+    \MD@NumberFont
+    \color{\MD@FormDarkColor}%
+    #1%
+  \endgroup
+}
+
+\newdimen\MD@VerticalGuideHeight
+
+\newcommand*{\MD@VerticalGuide}{%
+  \MD@VerticalGuideHeight=\dimexpr
+    \MD@BackgroundHeight+\MD@BackgroundDepth
+  \relax
+  %
+  \begingroup
+    \color{\MD@FormDarkColor}%
+    \raisebox{-\MD@BackgroundDepth}[0pt][0pt]{%
+      \rule{.22pt}{\MD@VerticalGuideHeight}%
+    }%
+  \endgroup
+}
+
+% --------------------------------------------------------------------------
+% Docking of line-number columns to the print area
+%
+% The complete number/feed assembly is shifted as one unit.  Therefore all
+% relative distances between hole, outer guide, number and inner guide remain
+% unchanged.
+% --------------------------------------------------------------------------
+
+\newdimen\MD@NumberDockOffset
+\MD@NumberDockOffset=\MD@NumberInnerOffset
+
+\newcommand*{\MD@NumberRenderLeft}{%
+	\MD@PaperCalculate
+	%
+	% Outer vertical guide.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@NumberDockOffset}%
+		\hspace*{-\MD@NumberOuterOffset}%
+		\MD@VerticalGuide
+	}%
+	%
+	% Inner vertical guide.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@NumberDockOffset}%
+		\hspace*{-\MD@NumberInnerOffset}%
+		\MD@VerticalGuide
+	}%
+	%
+	% Functional line number.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@NumberDockOffset}%
+		\hspace*{-\MD@NumberOuterOffset}%
+		\makebox[\MD@NumberWidth][c]{%
+			\MD@NumberText{\the\MD@PaperLine}%
+		}%
+	}%
+}
+
+\newcommand*{\MD@NumberRenderRight}{%
+	\MD@PaperCalculate
+	%
+	% Inner vertical guide.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@PrintoutFullWidth}%
+		\hspace*{-\MD@NumberDockOffset}%
+		\hspace*{\MD@NumberInnerOffset}%
+		\MD@VerticalGuide
+	}%
+	%
+	% Outer vertical guide.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@PrintoutFullWidth}%
+		\hspace*{-\MD@NumberDockOffset}%
+		\hspace*{\MD@NumberOuterOffset}%
+		\MD@VerticalGuide
+	}%
+	%
+	% Functional line number.
+	\makebox[0pt][l]{%
+		\hspace*{\MD@PrintoutFullWidth}%
+		\hspace*{-\MD@NumberDockOffset}%
+		\hspace*{\MD@NumberInnerOffset}%
+		\makebox[\MD@NumberWidth][c]{%
+			\MD@NumberText{\the\MD@PaperLine}%
+		}%
+	}%
+}
+
+% ==========================================================================
+% Feed Renderer
+% ==========================================================================
+\newcommand*\MD@FeedHoleColor{gray!25}
+\newcommand*\MD@FeedHoleSize{30pt}
+
+\newcommand*{\MD@FeedHole}{%
+	\begingroup
+	\color{\MD@FeedHoleColor}%
+	\raisebox{0ex}[0pt][0pt]{%
+		\fontsize{\MD@FeedHoleSize}{\MD@FeedHoleSize}\selectfont
+		\textbullet
+	}%
+	\endgroup
+}
+
+\newcommand*{\MD@FeedRender}{%
+	\ifMD@PunchHoles
+	\MD@FeedCalculate
+	%
+	\ifnum\MD@FeedSize>0\relax
+	\ifnum\MD@FeedPosition=\MD@FeedHolePosition
+	%
+	% Left tractor-feed hole.
+	% The offset specifies the CENTER of the hole.
+	%
+	\makebox[0pt][l]{%
+		\ifMD@LineNumbers
+		\hspace*{-\MD@LeftHoleOffsetWithNumbers}%
+		\else
+		\hspace*{-\MD@LeftHoleOffsetWithoutNumbers}%
+		\fi
+		\makebox[0pt][c]{%
+			\MD@FeedHole
+		}%
+	}%
+	%
+	% Right tractor-feed hole.
+	% The offset specifies the CENTER of the hole.
+	%
+	\makebox[0pt][l]{%
+		\hspace*{\MD@PrintoutFullWidth}%
+		\ifMD@LineNumbers
+		\hspace*{\MD@RightHoleOffsetWithNumbers}%
+		\else
+		\hspace*{\MD@RightHoleOffsetWithoutNumbers}%
+		\fi
+		\makebox[0pt][c]{%
+			\MD@FeedHole
+		}%
+	}%
+	\fi
+	\fi
+	\fi
+}
+
+% ==========================================================================
+% Paper Renderer
+% ==========================================================================
+
+\newdimen\MD@PaperBoundaryWidth
+\newdimen\MD@PaperBoundaryShift
+
+\newcommand*{\MD@PaperBoundaryCalculate}{%
+	\ifMD@LineNumbers
+	%
+	\MD@PaperBoundaryShift=
+	\dimexpr
+	-\MD@NumberOuterOffset
+	+\MD@NumberDockOffset
+	\relax
+	%
+	\MD@PaperBoundaryWidth=
+	\dimexpr
+	\MD@PrintoutFullWidth
+	+2\MD@NumberOuterOffset
+	-2\MD@NumberDockOffset
+	\relax
+	\else
+	%
+	\MD@PaperBoundaryShift=0pt
+	\MD@PaperBoundaryWidth=\MD@PrintoutFullWidth
+	\fi
+}
+
+\newcommand*{\MD@PaperSolidRule}{%
+  \begingroup
+    \color{\MD@FormDarkColor}%
+    \rule{\MD@PaperBoundaryWidth}{\MD@PaperEdgeThickness}%
+  \endgroup
+}
+
+\newcommand*{\MD@PaperDashedRule}{%
+  \begingroup
+    \color{\MD@FormDarkColor}%
+    \hbox to \MD@PaperBoundaryWidth{%
+      \leaders\hbox{%
+        \rule{1.5mm}{\MD@PaperPerforationThickness}%
+        \hskip.9mm
+      }\hfill
+    }%
+  \endgroup
+}
+
+\newcommand*{\MD@PaperRenderTop}{%
+  \MD@PaperBoundaryCalculate
+  %
+  \makebox[0pt][l]{%
+    \hspace*{\MD@PaperBoundaryShift}%
+    \raisebox{\MD@PaperTopOffset}[0pt][0pt]{%
+      \MD@PaperSolidRule
+    }%
+  }%
+}
+
+\newcommand*{\MD@PaperRenderPerforation}{%
+  \MD@PaperBoundaryCalculate
+  %
+  \makebox[0pt][l]{%
+    \hspace*{\MD@PaperBoundaryShift}%
+    \raisebox{\MD@PaperTopOffset}[0pt][0pt]{%
+      \MD@PaperDashedRule
+    }%
+  }%
+}
+
+\newcommand*{\MD@PaperRenderLineBoundary}{%
+  \MD@PaperCalculate
+  %
+  \ifnum\c@FancyVerbLine=1\relax
+    \ifMD@FormEnabled
+    	\MD@PaperRenderTop
+    \fi
+  \else
+    \ifnum\MD@PaperLine=1\relax
+      \ifMD@FormEnabled
+      	\MD@PaperRenderPerforation
+      \fi
+    \fi
+  \fi
+}
+
+% ==========================================================================
+% Complete per-line renderer
+% ==========================================================================
+
+\newcommand*{\MD@RenderLineDecoration}{%
+  %
+  % Physical medium order:
+  % Paper -> Form -> Feed -> Numbers -> Text
+  %
+  \MD@PaperRenderLineBoundary
+  \ifMD@FormEnabled
+  	\MD@FormRenderBandBoundary
+  \fi
+  \MD@FeedRender
+  %
+  \ifMD@LineNumbers
+    \MD@NumberRenderLeft
+    \MD@NumberRenderRight
+  \fi
+}
+
+% ==========================================================================
+% Printout initialization and fvextra integration
+% ==========================================================================
+
+\newcommand*{\MD@PrintoutInit}{%
+  %
+  % Re-read the current page geometry.  This is important when the package
+  % was loaded by mdlayout before mdlayout completed its own layout setup.
+  \MD@PrintoutCalculateGeometry
+  %
+  \MD@PaperValidate
+  \MD@FormValidate
+  \MD@FeedValidate
+  %
+  % fitcolumns may modify fontsize and baselineskip.
+  \MD@FitApply
+  %
+  % Geometry therefore must be initialized afterwards.
+  \MD@GeometryInit
+  %
+  % Preserve state required by the final boundary.
+  \ifMD@LineNumbers
+    \global\MD@FinalLineNumberstrue
+  \else
+    \global\MD@FinalLineNumbersfalse
+  \fi
+  %
+  \xdef\MD@FinalDarkColor{\MD@FormDarkColor}%
+}
+
+\newcommand*{\MD@PrintoutFormatting}{%
+  \MD@PrintoutInit
+  %
+  % Final border: use fancyvrb's exact lower edge of the last line box.
+  % This redefinition is local to the Printout environment group.
+  \let\MD@SavedFVListProcessLastLine\FV@ListProcessLastLine
+  \def\FV@ListProcessLastLine{%
+    \MD@SavedFVListProcessLastLine
+    \ifMD@FormEnabled
+    \MD@PaperRenderBottomAtListEnd
+    \fi
+  }%
+  %
+  % Background colour selection.
+  \let\MD@SavedFVBGColorList\FV@BGColor@List
+  %
+  \def\FV@BGColor@List##1{%
+    \MD@FormSelectBackground
+    \MD@SavedFVBGColorList{##1}%
+  }%
+  %
+  % Per-line decoration.
+  \let\MD@SavedFancyVerbFormatLine\FancyVerbFormatLine
+  %
+  \def\FancyVerbFormatLine##1{%
+    \MD@RenderLineDecoration
+    \MD@SavedFancyVerbFormatLine{##1}%
+  }%
+}
+
+% ==========================================================================
+% Final paper edge
+%
+% fancyvrb outputs the final buffered line in \FV@ListProcessLastLine.
+% Immediately afterwards TeX is exactly at the lower edge of that line box.
+% The bottom border is therefore placed there as a zero-height overlay.
+% ==========================================================================
+
+\newcommand*{\MD@PaperRenderBottomAtListEnd}{%
+  \MD@PaperBoundaryCalculate
+  %
+  \nointerlineskip
+  \hbox to \hsize{%
+    \kern\leftmargin
+    \hbox to \linewidth{%
+      \makebox[0pt][l]{%
+        \hspace*{\MD@PaperBoundaryShift}%
+        \raisebox{0pt}[0pt][0pt]{%
+          \MD@PaperSolidRule
+        }%
+      }%
+      \hss
+    }%
+    \hss
+  }%
+}
+
+% ==========================================================================
+% Built-in forms
+% ========================================================================== 
+
+\MDDeclarePrintoutForm{green}{%
+  color=green,
+  paperheight=999,
+  bandlines=2,
+  feedlines=3,
+  fitcolumns=132,
+  linenumbers=true,
+  punchholes=true,
+  fontsize=\footnotesize
+}
+
+\MDDeclarePrintoutForm{blue}{%
+  color=blue,
+  paperheight=999,
+  bandlines=2,
+  feedlines=3,
+  fitcolumns=132,
+  linenumbers=true,
+  punchholes=true,
+  fontsize=\footnotesize
+}
+
+\MDDeclarePrintoutForm{ibm1403}{%
+  color=green,
+  paperheight=60,
+  bandlines=3,
+  feedlines=3,
+  fitcolumns=132,
+  linenumbers=true,
+  punchholes=true,
+  fontsize=\scriptsize
+}
+
+\MDDeclarePrintoutForm{simple}{%
+  color=blue,
+  paperheight=999,
+  bandlines=2,
+  feedlines=0,
+  fitcolumns=132,
+  linenumbers=true,
+  punchholes=false,
+  fontsize=\normalsize
+}
+
+\MDDeclarePrintoutForm{plain}{%
+	color=none,
+	paperheight=999,
+	bandlines=0,
+	fitcolumns=132,
+	linenumbers=false,
+	punchholes=false,
+	fontsize=\normalsize
+}
+
+% ==========================================================================
+% Public environment
+% ==========================================================================
+
+\DefineVerbatimEnvironment{Printout}{Verbatim}{%
+  form=plain,
+  backgroundcolor=white,
+  formatcom=\MD@PrintoutFormatting,
+  xleftmargin=-\MD@PrintoutWideOffset,
+  xrightmargin=0pt,
+  framesep=0pt
+}
+
+% fancyvrb evaluates xleftmargin while entering the environment, i.e. before
+% formatcom is executed.  Refresh the geometry before that option processing.
+\BeforeBeginEnvironment{Printout}{%
+  \MD@PrintoutCalculateGeometry
+}
+
+% Lower-case listings-style compatibility alias.
+\let\printout\Printout
+\let\endprintout\endPrintout
+
+\makeatother
+
+\endinput

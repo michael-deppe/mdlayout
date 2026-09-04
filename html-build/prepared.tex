@@ -1,0 +1,3648 @@
+% !TEX TS-program = lualatex
+% !TeX encoding = UTF-8
+% !TeX spellcheck = en_US
+
+%% mdlayout.tex
+%%
+%% Copyright 2026 Prof. Dr. Michael Deppe
+%%
+%%               _ _                         _
+%% _ __ ___   __| | | __ _ _   _  ___  _   _| |_
+%%| '_ ` _ \ / _` | |/ _` | | | |/ _ \| | | | __|
+%%| | | | | | (_| | | (_| | |_| | (_) | |_| | |_
+%%|_| |_| |_|\__,_|_|\__,_|\__, |\___/ \__,_|\__|
+%%                         |___/
+%%
+%% mdlayout — Semantic layout framework for technical documentation.
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL),
+%% either version 1.3c of this license or (at your option)
+%% any later version.
+%%
+%% The latest version of this license is available at
+%%   https://www.latex-project.org/lppl.txt
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is
+%%   Michael Deppe.
+%%
+%% This work consists of the files
+%%   mdlayout.sty
+%%   mdlayout-printout.sty
+%%   mdlayout-referencetable.sty
+%%   mdpreamble.tex
+%%   mdlayout.cwl
+%%   mdlayout.md
+%%   mdlayout.tex
+%%   mdlayout.pdf
+%%   mdlayout-margin-logo.pdf
+%%   mdlayout.png
+%%   images.pdf
+%%
+
+% DOCUMENT CLASS
+% --------------
+% One of the KOMA-Script document classes 
+%   - scrartcl (for articles), 
+%   - scrreprt (for reports), or
+%   - scrbook (for books)
+%  is needed.
+\documentclass[
+11pt,
+a4paper,
+oneside
+]{scrbook}
+
+% LAYOUT
+% ------
+% mdlayout extends KOMA-Script with an asymmetric page geometry 
+%   based on the concepts of TextArea, MarginArea and FullArea. 
+%   It intentionally leaves typography to KOMA-Script while providing 
+%   a consistent layout model for technical books and documentation.
+%   An additional feature is the HalfArea which extends the left
+%   text limit not completly to the left end.
+%   Guideline: mdlayout provides the tools required for high-quality 
+%              technical documentation—nothing more, nothing less.
+\usepackage{mdlayout}
+
+% DESIGN
+% ------
+% mdpreamble sets the design for a tecnical documentation
+%   and loads all packages needed for such a document. 
+%   mdpreamble.tex needs the mdlayout package, 
+%   but mdlayout itself does not depend on mdpreamble.tex
+\input{mdpreamble}
+
+% images
+\input{mdlayout-images-pages.tex}
+
+% document specifig definition(s)
+\newcommand{\latex}[1]{\texttt{\detokenize{#1}}}
+
+\company{\MDWordmark documentation}
+
+\begin{document}
+
+% BOOK COVER
+% grey frame for book cover, must be applied before \begin{titlepage}.
+\FrameForNextPage[
+color=gray,
+width=5mm,
+inset=5mm
+]
+% content of cover page
+\begin{titlepage}
+	\thispagestyle{empty}
+	
+	\begin{center}	
+		\MDStyle{tex-size-Huge,tex-bfseries}{Michael Deppe}
+		\vspace{2mm}
+		\MDStyle{tex-fontsize-56,tex-bfseries}{\MDWordmark}
+		\includegraphics[width=.90\linewidth]{images/mdlayout-tixi-reading3.webp}
+	\end{center}
+
+\end{titlepage}
+
+% TITLEPAGE
+\begin{titlepage}
+	\thispagestyle{empty}
+	
+	\vspace*{10mm}
+	
+	\begin{center}
+		
+		\MDStyle{tex-fontsize-28,tex-bfseries}{\MDWordmark}
+		
+		\vspace{2mm}
+		
+		\MDStyle{tex-size-Large}{Asymmetric Page Layout\\[1mm]
+			for KOMA-Script Technical Documentation
+		}
+		
+		\vspace{8mm}
+		
+		\includegraphics[width=.70\linewidth]{mdlayout.png}
+		
+		\vspace{2mm}
+		
+		\MDStyle{tex-size-small,tex-bfseries}{MarginArea + TextArea = FullArea}
+		
+		\vfill
+		
+		\MDStyle{tex-size-Large,tex-bfseries}{User's Guide}
+		
+		\vspace{4mm}
+		
+		\MDStyle{tex-size-large}{Version~0.16.3}
+		
+		\vspace{1mm}
+		
+		Michael Deppe
+		
+		\vspace{1mm}
+		
+		2026/08/18
+		
+		\vfill
+		
+		\begin{minipage}{.78\linewidth}
+			\centering
+			\small
+			\itshape
+			Readable prose and wide technical material place conflicting
+			demands on page layout.
+			\MDWordmark resolves this conflict by introducing
+			semantically named layout areas that provide additional width
+			only where it is actually required.
+		\end{minipage}
+		
+	\end{center}
+\end{titlepage}
+
+\frontmatter  % Sets page numbers to lowercase Roman format.
+
+\noindent\textbf{Trademark and Copyright Disclaimer:} \\
+The character "Tixi" and any other product names, logos, or 
+designations mentioned in the code examples and typesetting samples 
+are fictitious elements designed solely to demonstrate the 
+functionalities of this \LaTeX{} package/document. 
+
+The use of these names does not constitute a trademark-style usage for 
+the branding of independent commercial goods or services (specifically 
+regarding Nice Classification classes 9 and 42). All registered 
+trademarks, including \TeX{} and \LaTeX{} itself, remain the property of their 
+respective owners.
+
+\smallskip
+\noindent
+\textbf{Graphics Protection:} All illustrations, diagrams, and artwork 
+depicting the character "Tixi" contained within this document are 
+the exclusive intellectual property of the author. These graphics are 
+protected under international copyright laws. Copying, 
+modifying, or distributing these visual assets outside of this 
+documentation is prohibited without prior written consent. \\
+\copyright\ \the\year\ Michael Deppe. All rights reserved.
+
+\begin{DirectoryArea}
+	\tableofcontents
+	\clearpage
+	\listoffigures
+	\clearpage
+	\listoftables
+\end{DirectoryArea}
+
+\mainmatter  % Switches page numbering to Arabic numerals
+
+% ============================================================================
+% Chapter Colophon
+% ============================================================================
+
+\chapter*{Colophon}
+\addcontentsline{toc}{chapter}{Colophon}
+
+This manual is itself an example of a technical document produced with
+\MDWordmark.
+The complete document source, including the accompanying
+\texttt{mdpreamble.tex}, is distributed as part of the package and may
+serve as a starting point for your own documentation projects.
+
+\bigskip
+
+\noindent
+All illustrations showing the \MDWordmark cat \emph{Tixi} in this manual are copyrighted by the author. All rights reserved. They are not part of the 
+LaTeX Project Public License (LPPL).
+
+\bigskip
+
+\noindent
+Typeset with \usedtexengine, KOMA-Script and
+\MDWordmark Version~0.16.3.\\
+Compiled on \today\ at 13:14:15.
+
+% ============================================================================
+% Chapter Preface
+% ============================================================================
+
+\chapter*{Preface}
+
+\addcontentsline{toc}{chapter}{Preface}
+
+\MDWordmark was not created to provide another collection of layout
+macros. Its purpose is different. 
+Like \LaTeX{} itself, \MDWordmark encourages authors to describe the
+semantic meaning of document elements rather than their visual
+appearance. 
+Instead of specifying how something should look, the author
+describes what it represents.
+A compiler listing is not simply verbatim text. A system log is not just
+another listing. A machine printout is fundamentally different from
+source code. Each of these objects has its own logical structure and,
+consequently, its own natural layout.
+
+The environments provided by \MDWordmark therefore represent document
+types rather than formatting instructions. The package chooses an
+appropriate visual representation while preserving the logical
+properties of the underlying material.
+
+This philosophy is perhaps most evident in the \texttt{Printout}
+environment. Rather than selecting a font size, the author specifies the
+logical width of the output, for example using
+\texttt{fitcolumns=132}. \MDWordmark automatically determines the
+largest suitable monospaced font that fits the available print area.
+Different appearances, such as plain output, green-bar paper or an
+IBM~1403 listing, are simply different \emph{forms} of the same document
+type.
+
+The same principle applies to the \texttt{ReferenceTable} environment.
+Instead of constructing a table from low-level column specifications,
+the author describes the role of its columns. A column may contain
+ordinary text, typewriter text or verbatim material, while other columns
+can automatically use the remaining available width. The table can
+therefore adapt to different layout areas without changing its semantic
+description.
+This is particularly useful in technical documentation, where tables
+frequently combine commands, literal syntax, default values and
+explanatory text. \texttt{ReferenceTable} treats these as properties of
+the information being presented rather than as instructions for
+constructing a particular \LaTeX{} table.
+
+Many ideas implemented in \MDWordmark originated from documenting
+real-world software projects, where source code, terminal sessions,
+system logs and generated output appear side by side. The package is
+therefore driven by practical requirements rather than visual effects.
+If \MDWordmark encourages authors to think first about the meaning of a
+document element before deciding how it should look, then it has
+achieved its primary objective.
+
+\bigskip
+\bigskip
+
+\begin{flushright}
+	Michael Deppe\\
+	August 2026
+\end{flushright}
+
+% ============================================================================
+% Chapter Introduction
+% ============================================================================
+
+\chapter{Introduction}
+\label{chap:Introduction}
+
+\section{Why \MDWordmark?}
+
+\begin{MarginFigure}
+	\includegraphics[width=\mdMarginWidth]{images/mdlayout-tixi-building.webp}
+\end{MarginFigure}
+
+\noindent
+\LaTeX{} has become the de facto standard for scientific and technical
+publishing.
+Together with KOMA-Script it provides an excellent typographic foundation for
+books, reports, manuals, and reference documentation.
+Technical documentation, however, places demands on page layout that differ
+significantly from those of ordinary prose.
+
+A typical technical manual contains program listings, terminal sessions,
+directory listings, configuration files, command syntax, flow diagrams,
+screenshots, wide tables, and reference material.
+Many of these objects require considerably more horizontal space than
+continuous text.
+
+Increasing the width of every page appears to solve this problem.
+Unfortunately, it also produces long text lines that are more difficult to
+read and visually less balanced.
+The challenge is therefore straightforward:
+\SyncMarginAndTextArea{\mdSeeRight}{
+\begin{quote}
+	How can a document provide \emph{additional width} only where it is actually needed
+	while preserving \emph{comfortable line lengths} for ordinary text?
+\end{quote}
+}
+
+\noindent \MDWordmark answers this question by separating the concepts of
+\emph{readability} and \emph{available page width}.
+Instead of treating every page as a single rectangular text block, the package
+divides the page into semantically named layout areas.
+Each area serves a specific purpose and can be selected directly by the author
+without calculating dimensions or modifying page geometry.
+The guiding principle is deliberately simple:
+\begin{quote}
+	\textbf{Use the smallest layout area that presents the content correctly.}
+\end{quote}
+Ordinary prose remains inside the \textbf{TextArea}.
+Small illustrations or little symbols (see above) inside the
+\textbf{MarginArea} may accompany the text.
+Only content that genuinely requires additional width extends into the
+\textbf{HalfArea} or the \textbf{FullArea}.
+The result is a page layout that combines comfortable reading with the ability
+to present complex technical material without compromise.
+
+\section{Design Philosophy}
+
+The design of \MDWordmark follows a small number of simple principles.
+
+\subsection{Semantic instead of geometric layout}
+Authors should not think in terms of millimetres or page dimensions.
+Instead of asking
+\begin{quote}
+	``How much wider should this table become?''
+\end{quote}
+the author asks
+\begin{quote}
+	``Which layout area best represents this content?''
+\end{quote}
+This semantic approach keeps the document source readable while producing a
+consistent layout throughout the entire document.
+
+\subsection{Simplicity}
+
+Every public command has a clearly defined purpose.
+Whenever several implementation strategies are possible,
+\MDWordmark deliberately favours the solution that keeps the document
+source understandable, predictable, and easy to maintain.
+
+\subsection{Explicit author control}
+
+The package intentionally avoids unnecessary automation.
+For example, the \texttt{MarginFigure} environment is not a floating
+environment.
+A margin figure appears exactly where the author places it in the source
+document.
+Automatic repositioning would transform it into another floating mechanism and
+would therefore contradict its intended purpose.
+Whenever automatic placement is desired, the standard floating
+\texttt{figure} environment remains the appropriate choice.
+
+\subsection{Built on KOMA-Script}
+
+\MDWordmark is not a document class.
+Instead, it extends KOMA-Script with a compact collection of layout tools
+specifically designed for technical documentation while preserving the
+typographic quality and familiar workflow provided by KOMA-Script.
+
+\section{The Layout Model}
+\begin{widefigure}[htbp]
+	\includegraphics[width=1.0\fullwidth]{mdlayout.png} 
+	\caption{Asymmetric Layout of \textbf{md}layout. This figure uses the space provided by \textbf{FullArea}}
+	\MDLabel{fig:Layout}
+\end{widefigure}
+The entire package is based on three fundamental layout areas (Figure~\MDRef{fig:Layout}{1}).
+\begin{itemize}
+	\item The \textbf{TextArea} contains ordinary prose.
+	\item The \textbf{MarginArea} accompanies the TextArea and is primarily intended to keep 
+	\begin{itemize}
+		\item the TextArea narrow, 
+		\item to provide space for section titles, and 
+		\item for small non-floating illustrations placed using the
+		\item \textbf{MarginFigure} environment.
+	\end{itemize}
+	\item Together both, the \textbf{MarginArea} and the \textbf{TextArea} area form the \textbf{FullArea}, which becomes available whenever technical content requires the complete usable page width.
+	\item Every other environment provided by mdlayout is derived from this simple model.
+\end{itemize}
+
+\section{Scope}
+
+\MDWordmark concentrates on practical requirements commonly encountered
+in technical books and reference manuals.
+It provides dedicated layout environments for
+\begin{itemize}
+	\item readable continuous prose,
+	\item document directories,
+	\item wide tables,
+	\item wide figures,
+	\item long tables,
+	\item terminal output and listings,
+	\item full-width chapter headings,
+	\item non-floating margin figures,
+	\item and long or wide printouts, e.g. logfiles.
+\end{itemize}
+The package intentionally avoids decorative features and unnecessary
+complexity.
+Its objective is not to replace KOMA-Script but to complement it with a small,
+consistent, and semantically oriented layout system for technical
+documentation.
+
+\section{Meet Tixi}
+
+\begin{SynchronizedMarginAndTextArea}
+	\begin{TextInMarginArea}
+		\includegraphics[width=\mdMarginWidth]{images/mdlayout-tixi.webp}
+	\end{TextInMarginArea}
+	\begin{TextInTextArea}
+		Throughout this documentation you will occasionally encounter
+		\emph{Tixi}, the little \MDWordmark cat.
+		Tixi has developed a particular interest in \TeX{}, \LaTeX{}, and
+		asymmetric page layouts. She measures margins, moves type around,
+		experiments with boxes, and occasionally operates machinery that
+		probably should not be entrusted to a kitten.
+		
+		Tixi prefers semantic layout instructions to mysterious negative
+		horizontal spaces and therefore feels quite at home in \MDWordmark.
+		Her illustrations accompany examples of \MDWordmark concepts and
+		provide a visual counterpart to some of the more technical parts of
+		this documentation.
+	\end{TextInTextArea}
+\end{SynchronizedMarginAndTextArea}
+
+% ============================================================================
+% Chapter Quick Start
+% ============================================================================
+
+\chapter{Quick Start}
+\label{chap:quickstart}
+\begin{MarginFigure}
+	\includegraphics[width=\mdMarginWidth]{images/mdlayout-tixi-formula-1.webp}
+\end{MarginFigure}
+This chapter demonstrates the most frequently used features of
+\MDWordmark.
+The examples are intentionally short and can be copied directly into your own
+documents.
+In most technical books only four concepts are required:
+\begin{itemize}
+	\item ordinary text remains in the \textbf{TextArea},
+	\item slightly wider material uses the \textbf{HalfArea},
+	\item large technical objects use the \textbf{FullArea},
+	\item small accompanying illustrations are placed using
+	\textbf{MarginFigure}.
+\end{itemize}
+No manual page geometry calculations are necessary.
+
+% -----------------------------------------------------------------------------
+
+\section{Ordinary Text}
+
+No special environment is required for continuous prose.
+Simply write
+
+
+\MDCodeBlock{0}
+
+
+Continuous text should normally remain inside the TextArea because this
+provides the most comfortable line length for reading.
+
+% -----------------------------------------------------------------------------
+
+\section{Using HalfArea}
+
+Whenever a little more horizontal space is required, the text can be extended
+into the HalfArea.
+\begin{HalfArea}
+
+
+\MDCodeBlock{1}
+
+
+\end{HalfArea}
+Result of the last command using \texttt{HalfArea}:
+\begin{HalfArea}
+	
+	This paragraph is wider than the normal TextArea but does not occupy 
+	the complete FullArea.
+	
+\end{HalfArea}
+\ %
+\\[1ex]
+\noindent
+Typical applications are:
+\begin{itemize}
+	\item command descriptions,
+	\item option lists,
+	\item API documentation,
+	\item configuration files.
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+
+\section{Using FullArea}
+
+Large technical material should use the complete available page width.
+\begin{FullArea}
+
+
+\MDCodeBlock{2}
+
+
+\end{FullArea}
+Typical applications include
+\begin{itemize}
+	\item program listings,
+	\item terminal sessions,
+	\item screenshots,
+	\item flow diagrams,
+	\item wide tables,
+	\item long command lines.
+\end{itemize}
+
+% -----------------------------------------------------------------------------
+
+\section{Margin Figures}
+
+Small illustrations that accompany the surrounding text may be placed inside
+the MarginArea (see Figure \MDRef{fig:margin-logo}{2}).
+\begin{MarginFigure}
+	\includegraphics[width=\mdMarginWidth]{mdlayout-margin-logo.pdf}
+	\caption{The basic \MDWordmark layout model}
+	\MDLabel{fig:margin-logo}
+\end{MarginFigure}
+
+
+\MDCodeBlock{3}
+
+
+The \texttt{MarginFigure} environment places small figures next 
+to the associated text, while the normal body text remains 
+within the \texttt{TextArea}.
+Unlike the standard \texttt{figure} environment,
+\texttt{MarginFigure} is intentionally \emph{non-floating}.
+It therefore appears exactly at the position where it is placed
+in the source document.
+As a consequence, the author must take some care when placing
+\texttt{MarginFigure} environments, since they may overlap with
+other material in the \texttt{MarginArea} if insufficient vertical
+space is available.
+
+% -----------------------------------------------------------------------------
+
+\section{Wide Figures}
+
+Whenever automatic figure placement is desired, use
+\texttt{widefigure}.
+
+
+\MDCodeBlock{4}
+
+
+The environment behaves like a normal floating
+\texttt{figure} but automatically uses the FullArea.
+
+% -----------------------------------------------------------------------------
+
+\section{Choosing the Correct Area}
+
+A simple rule is sufficient for almost every document.
+\begin{center}
+	\MDTabular{0}
+\end{center}
+Whenever in doubt, choose the smallest area that presents the content
+comfortably.
+This principle keeps documents visually balanced while making additional page
+width available exactly where it is needed.
+
+\section{Semantic Layout}
+One of the fundamental design goals of \MDWordmark is the separation of
+\emph{what} should happen from \emph{how} it is implemented.
+Traditional layout packages often require the author to think in terms of
+physical dimensions:
+
+
+\MDCodeBlock{5}
+
+
+
+\begin{SynchronizedMarginAndTextArea}
+	\begin{TextInMarginArea}
+		\MDLabel{fig:mdlayout-tixi-measuring}
+		{\includegraphics[width=\mdMarginWidth]{images/mdlayout-tixi-measuring.webp}}
+	\end{TextInMarginArea}
+	\begin{TextInTextArea}
+		Such code describes the implementation rather than the intention.
+		The value \texttt{-37mm} has no semantic meaning.
+		A reader cannot determine why this particular value was chosen or what the
+		author intended to achieve.
+		In contrast, \MDWordmark encourages semantic document source:
+
+
+\MDCodeBlock{6}
+
+
+	\end{TextInTextArea}
+\end{SynchronizedMarginAndTextArea}
+The source now describes the purpose rather than the geometry.
+The author no longer asks
+\begin{quote}
+	``\emph{How many millimetres should I move this paragraph?}''
+\end{quote}
+Instead, the question becomes
+\begin{quote}
+	``\emph{Which layout area best represents this content?}''
+\end{quote}
+This makes the document easier to understand, easier to maintain, and largely
+independent of the underlying page geometry.
+The same philosophy applies throughout the package:
+\begin{center}
+	\MDTabular{1}
+\end{center}
+The package therefore describes \emph{what belongs where} rather than
+\emph{how far something should be moved}.
+
+% ============================================================================
+% Chapter Installation
+% ============================================================================
+
+\chapter{Installation and Requirements}
+\label{chap:installation}
+\begin{center}
+	\includegraphics[width=0.7\linewidth]{images/mdlayout-tixi-building-mdlayout.webp}
+\end{center}
+
+\section{\LaTeX{} Engine}
+
+The \MDWordmark package requires \LuaLaTeX{} and \textbf{UTF-8}
+encoding. When using an integrated \LaTeX{} development environment that
+understands \TeX{} editor directives (\texttt{magic comments}), such
+as \textbf{TeXstudio}, \textbf{\TeX Shop}, or \textbf{\TeX works},
+the following two lines should be placed at the beginning of the
+document:
+
+
+\MDCodeBlock{7}
+
+
+
+\section{Requirements}
+
+The \MDWordmark package extends the page layout and heading mechanisms
+provided by KOMA-Script.
+It supports the following KOMA-Script document classes:
+
+\begin{itemize}
+	\item \texttt{scrartcl},
+	\item \texttt{scrreprt},
+	\item \texttt{scrbook}.
+\end{itemize}
+Other document classes are not supported.
+The package loads the following dependencies:
+\begin{itemize}
+	\item \texttt{kvoptions},
+	\item \texttt{etoolbox},
+	\item \texttt{changepage},
+	\item \texttt{scrlayer-scrpage},
+	\item \texttt{xcolor},
+	\item \texttt{graphicx},
+	\item \texttt{caption}.
+\end{itemize}
+The \texttt{fancyhdr} package is not supported.
+Page headers and footers are configured using
+\texttt{scrlayer-scrpage}.
+
+\section{Basic Package Loading}
+
+The package can be loaded without explicit options:
+
+
+\MDCodeBlock{8}
+
+
+The default configuration uses a margin area of \texttt{38mm} and a gutter
+of \texttt{5mm}.
+A typical explicit configuration (here with the default values) is:
+
+
+\MDCodeBlock{175}
+
+
+The normal KOMA-Script text width is retained as the width of the
+\textbf{TextArea}.
+The additional \textbf{MarginArea} and gutter extend to the left of this
+column.
+
+\section{Recommended Loading Order}
+
+The KOMA-Script document class must be selected before loading
+\MDWordmark:
+
+
+\MDCodeBlock{9}
+
+
+Packages that configure fonts, bibliography, hyperlinks, tables, listings,
+or document-specific colours may be loaded separately in the document
+preamble (here \texttt{mdpreamble}). 
+The package is deliberately independent of a particular visual style.
+
+% ============================================================================
+% Chapter The Document Preamble
+% ============================================================================
+
+\chapter{The Document Preamble}
+\section{mdpreamble.tex}
+\includegraphics[width=0.7\mdTextWidth]{images/mdlayout-tixi-sticking-bricks.webp}\\
+One of the design goals of \MDWordmark is to separate the logical
+structure of a document from its visual appearance.
+The package itself provides semantic layout environments and document
+elements. The overall visual style, however, is intentionally left to the
+author.
+For this reason, every serious \MDWordmark project should begin with
+a well-designed document \emph{preamble}.
+
+The preamble is much more than a place for loading packages. It defines
+the typographic identity of the entire document, including fonts,
+colours, captions, hyperlinks, table styles, verbatim environments,
+warning boxes, indexes and many other global design decisions.
+Rather than prescribing a fixed appearance, \MDWordmark encourages
+authors to develop a consistent document design that reflects the purpose
+of their project.
+To simplify this process, the distribution contains the file
+
+
+\MDCodeBlock{10}
+
+
+which is used without modification for producing this manual.
+The file is intended as a practical starting point rather than as a fixed
+template. Users are encouraged to adapt it to their own requirements.
+Among other things, the example preamble demonstrates
+\begin{itemize}
+	\item a complete font configuration using modern OpenType fonts,
+	\item a consistent document colour palette,
+	\item hyperlink and PDF configuration,
+	\item table layouts,
+	\item verbatim environments for source code,
+	\item warning and information boxes,
+	\item index generation,
+	\item typography improvements,
+	\item and numerous small refinements that contribute to a consistent
+	overall appearance.
+\end{itemize}
+The supplied preamble deliberately follows the same design philosophy as
+the rest of \MDWordmark: semantic rather than visual descriptions.
+Instead of selecting arbitrary colours throughout the document, semantic
+design colours such as
+
+
+\MDCodeBlock{11}
+
+
+are defined once and reused consistently.
+Likewise, document elements are described by their purpose rather than by
+their appearance. A compiler listing is typeset using the
+\texttt{listing} environment, while machine-generated output is displayed
+using \texttt{Printout}. Captions, warning boxes and hyperlinks all
+derive their appearance from the common design language established by
+the preamble.
+
+Although the supplied \texttt{mdpreamble.tex} is fully functional, it is
+not intended to be the only possible solution. It should be regarded as a
+living example of how a complete technical document can be organized.
+Authors are encouraged to extend, simplify or completely redesign the
+preamble to match the needs of their own projects.
+
+This manual itself demonstrates that approach: every page of the
+documentation is produced using the accompanying
+\texttt{mdpreamble.tex}. Consequently, every design decision described in
+the following chapters can immediately be studied in a real document and
+adapted for other projects.
+ 
+\section{Testing Mathematical Typesetting}
+\label{sec:FormulaTest}
+\begin{center}
+	\includegraphics[width=0.5\mdTextWidth]{images/mdlayout-tixi-integral.webp}\\ 
+\end{center}
+If a technical document contains mathematical expressions, it can be useful to include a small formula test while setting up the document preamble. Such a test makes it possible to verify at an early stage whether the selected text and mathematics fonts work together correctly and whether all required mathematical symbols are available.
+
+A suitable test should contain different kinds of mathematical notation: Latin and Greek characters, superscripts and subscripts, fractions, roots, operators, delimiters, and more complex displayed equations. The following examples provide a compact visual test of the mathematical typesetting configured in the standard \MDWordmark preamble "\texttt{mdpreamble.tex}".
+
+A very simple example is Einstein's mass--energy relation:
+\begin{equation}
+	E = mc^2 .
+	\tag{4.1}
+\end{equation}
+Here, $E$ denotes energy, $m$ denotes mass, and $c$ is the speed of light. Apart from its physical meaning, this formula provides a useful typographical test because it combines mathematical variables with a superscript.
+
+Fractions, roots, and Greek letters can be tested, for example, with the quadratic formula:
+\begin{equation}
+	x_{1,2}
+	=
+	\frac{-b \pm \sqrt{b^2-4ac}}{2a}.
+	\tag{4.2}
+\end{equation}
+
+The formula gives the solutions of a quadratic equation $(ax^2+bx+c=0)$. From a typesetting perspective, it tests subscripts, a fraction, the \verb|\pm| symbol, a square root, and superscripts within the same expression.
+
+A somewhat more demanding example is the Gaussian integral:
+\begin{equation}
+	\int_{-\infty}^{\infty} e^{-x^2}\,\mathrm{d}x
+	=
+	\sqrt{\pi}.
+	\tag{4.3}
+\end{equation}
+Its value is the square root of $\pi$. This expression additionally tests integral signs, limits, the infinity symbol, exponential notation, Greek characters, and the spacing around the differential $\mathrm{d}x$.
+
+Finally, a formula containing several different mathematical structures can be used as a more comprehensive test:
+\begin{equation}
+	f(x)
+	=
+	\sum_{n=0}^{\infty}
+	\frac{(-1)^n}{(2n+1)!}\,
+	x^{2n+1}.
+	\tag{4.4}
+\end{equation}
+This is the Taylor series of the sine function,
+\begin{equation}
+	f(x)=\sin x.
+	\tag{4.5}
+\end{equation}
+It provides a convenient test for summation symbols and their limits, fractions, factorials, parentheses, superscripts, and mathematical functions.
+
+Einstein's field equations are a set of ten interconnected mathematical formulas in Albert Einstein's general theory of relativity that show how mass, energy, and momentum curve the fabric of spacetime
+\begin{equation}
+	R_{\mu\nu}
+	-\frac{1}{2}R\,g_{\mu\nu}
+	+\Lambda g_{\mu\nu}
+	=
+	\frac{8\pi G}{c^4}T_{\mu\nu} .
+	\tag{4.6}
+\end{equation}
+
+Maxwell's equations in standard vector differential form consist of four partial differential equations relating electric and magnetic fields to their sources
+\begin{align}
+	\nabla \cdot \mathbf{E}
+	&= \frac{\rho}{\varepsilon_0},
+	&&\text{(4.7)}
+	\\
+	\nabla \cdot \mathbf{B}
+	&= 0,
+	&&\text{(4.8)}
+	\\
+	\nabla \times \mathbf{E}
+	&= -\frac{\partial \mathbf{B}}{\partial t},
+	&&\text{(4.9)}
+	\\
+	\nabla \times \mathbf{B}
+	&= \mu_0 \mathbf{J}
+	+ \mu_0\varepsilon_0
+	\frac{\partial \mathbf{E}}{\partial t}.
+	&&\text{(4.10)}
+\end{align}
+
+Maxwell's equations in integral form relate electric and magnetic fields to their sources (charges and currents) over geometric surfaces and volumes
+\begin{align}
+	\oiint_{\partial V}
+	\mathbf{E}\cdot d\mathbf{A}
+	&= \frac{Q_{\mathrm{enc}}}{\varepsilon_0},
+	&&\text{(4.11)}
+	\\
+	\oiint_{\partial V}
+	\mathbf{B}\cdot d\mathbf{A}
+	&= 0,
+	&&\text{(4.12)}
+	\\
+	\oint_{\partial A}
+	\mathbf{E}\cdot d\boldsymbol{\ell}
+	&= -\frac{d}{dt}
+	\iint_A \mathbf{B}\cdot d\mathbf{A},
+	&&\text{(4.13)}
+	\\
+	\oint_{\partial A}
+	\mathbf{B}\cdot d\boldsymbol{\ell}
+	&= \mu_0 I_{\mathrm{enc}}
+	+ \mu_0\varepsilon_0
+	\frac{d}{dt}
+	\iint_A \mathbf{E}\cdot d\mathbf{A}.
+	&&\text{(4.14)}
+\end{align}
+
+A particularly compact example is provided by quantum electrodynamics
+(QED). Its dynamics can be described by the QED Lagrangian density
+\begin{equation}
+	\mathcal{L}_{\mathrm{QED}}
+	=
+	\bar{\psi}
+	\left(
+	i\gamma^\mu D_\mu - m
+	\right)
+	\psi
+	-
+	\frac{1}{4}
+	F_{\mu\nu}F^{\mu\nu},
+	\qquad
+	D_\mu = \partial_\mu + i e A_\mu .
+	\tag{4.15}
+\end{equation}
+Here, $\psi$ denotes the Dirac field describing electrically charged
+spin-$\frac{1}{2}$ matter, while $\bar{\psi}$ is its Dirac adjoint.
+The matrices $\gamma^\mu$ are the Dirac gamma matrices, $m$ denotes the
+mass of the matter field, and $e$ its electric charge. The covariant
+derivative $D_\mu$ couples the matter field to the electromagnetic
+four-potential $A_\mu$.
+
+The electromagnetic field itself is represented by the field-strength
+tensor
+\begin{equation}
+	F_{\mu\nu}
+	=
+	\partial_\mu A_\nu
+	-
+	\partial_\nu A_\mu .
+	\tag{4.16}
+\end{equation}
+Expanding the covariant derivative makes the interaction between matter
+and the electromagnetic field explicit:
+\begin{equation}
+	\mathcal{L}_{\mathrm{QED}}
+	=
+	\bar{\psi}
+	\left(
+	i\gamma^\mu \partial_\mu - m
+	\right)
+	\psi
+	-
+	e\,\bar{\psi}\gamma^\mu A_\mu\psi
+	-
+	\frac{1}{4}
+	F_{\mu\nu}F^{\mu\nu}.
+	\tag{4.17}
+\end{equation}
+The three terms describe the free Dirac field, its interaction with the
+electromagnetic field, and the free electromagnetic field, respectively.
+This single expression therefore provides a useful typographical test for
+Greek letters, superscripts and subscripts, fractions, operators, and
+mathematical spacing.
+
+Matrices provide another useful test because they combine large delimiters
+with numbers and mathematical operators. For example, multiplying two
+$2\times2$ matrices gives
+\begin{equation}
+	\begin{pmatrix}
+		1 & 2 \\
+		3 & 4
+	\end{pmatrix}
+	\begin{pmatrix}
+		5 & 6 \\
+		7 & 8
+	\end{pmatrix}
+	=
+	\begin{pmatrix}
+		1\cdot5+2\cdot7 & 1\cdot6+2\cdot8 \\
+		3\cdot5+4\cdot7 & 3\cdot6+4\cdot8
+	\end{pmatrix}
+	=
+	\begin{pmatrix}
+		19 & 22 \\
+		43 & 50
+	\end{pmatrix}.
+	\tag{4.18}
+\end{equation}
+Each element of the resulting matrix is obtained by multiplying the
+corresponding elements of a row of the first matrix with those of a column
+of the second matrix and adding the products.
+
+The same operation can be written symbolically as
+\begin{equation}
+	\begin{pmatrix}
+		a & b \\
+		c & d
+	\end{pmatrix}
+	\begin{pmatrix}
+		x & y \\
+		z & w
+	\end{pmatrix}
+	=
+	\begin{pmatrix}
+		ax+bz & ay+bw \\
+		cx+dz & cy+dw
+	\end{pmatrix}.
+	\tag{4.19}
+\end{equation}
+For general matrices $A$ and $B$, their product $C=AB$ is defined
+component by component by
+\begin{equation}
+	c_{ij}
+	=
+	\sum_{k=1}^{n} a_{ik}b_{kj}.
+	\tag{4.20}
+\end{equation}
+Thus, the element $c_{ij}$ is the scalar product of row $i$ of $A$ and
+column $j$ of $B$. Besides being the general definition of matrix
+multiplication, this expression is particularly useful for testing
+summation symbols, limits, indices, and the relative appearance of
+text and mathematical numerals.
+
+These examples are not intended as a mathematical or physical tutorial. Their primary purpose here is to provide a quick visual check of the mathematical configuration established in the document preamble. In particular, attention should be paid to the appearance of variables, Greek letters, operators, delimiters, superscripts and subscripts, and to whether the mathematics font harmonizes with the surrounding text font.
+
+% ============================================================================
+% Chapter Layout model
+% ============================================================================
+
+\chapter{The Layout Model}
+\label{chap:layout-model}
+\includegraphics[width=1.0\linewidth]{images/mdlayout-tixi-page-layout.webp}
+
+\section{Fundamental Areas}
+The page layout is built upon two physical areas:
+\begin{description}
+	\item[\textbf{MarginArea}]
+	The usable column to the left of the normal text column.
+	
+	\item[\textbf{TextArea}]
+	The normal KOMA-Script text column used for continuous prose.
+\end{description}
+The two areas are separated by the gutter.
+Together they form the \textbf{FullArea}:
+\begin{note}
+	\textbf{MarginArea + Gutter + TextArea = FullArea}
+\end{note}
+The normal text column remains physically at the same horizontal position on
+odd and even pages.
+The layout is therefore asymmetric but not mirrored.
+
+\section{TextArea}
+
+The \textbf{TextArea} is the normal document area.
+It is used automatically for ordinary paragraphs and does not require a
+dedicated environment.
+Its width is available as:
+
+
+\MDCodeBlock{12}
+
+
+and remains identical to the calculated KOMA-Script text width at the time
+the layout is initialized.
+
+\section{MarginArea}
+
+The \textbf{MarginArea} occupies the usable left column and excludes the
+gutter.
+Its width is controlled by the package option:
+
+
+
+\MDCodeBlock{13}
+
+
+and is available in the document as:
+
+
+\MDCodeBlock{14}
+
+
+The MarginArea is intended for small accompanying figures or other explicitly
+positioned material. It is not intended for text, although it is possible to write there.
+
+\begin{MarginArea}
+	\begin{warning}
+		Avoid too much content in the MarginArea.
+	\end{warning}
+\end{MarginArea}
+
+\section{HalfArea}
+\begin{HalfArea}
+The \textbf{HalfArea} extends the normal text column into half of the wide
+offset.
+Its total width is:
+
+
+\MDCodeBlock{15}
+
+
+and the horizontal extension is:
+
+
+\MDCodeBlock{16}
+
+
+The HalfArea is suitable for material that requires more width than ordinary
+text but does not require the complete FullArea.
+\end{HalfArea}
+
+\section{FullArea}
+\begin{FullArea}
+The \textbf{FullArea} uses the complete available layout width from the left
+edge of the MarginArea to the right edge of the TextArea.
+Its width is available as:
+
+
+\MDCodeBlock{17}
+
+
+The horizontal distance between the left edges of TextArea and FullArea is:
+
+
+\MDCodeBlock{18}
+
+
+with:
+
+
+\MDCodeBlock{19}
+
+
+\end{FullArea}
+
+\section{Synchronized Margin and Text Areas}
+\subsection{Synchronizing content by \textbackslash SyncMarginAndTextArea}
+
+Sometimes an object in the margin is not independent information but
+refers directly to a specific object in the main text area.
+Typical examples are
+\begin{itemize}
+	\item a short warning or comment,
+	\item a symbol,
+	\item a keyword or label,
+	\item a small explanatory note,
+	\item or a graphical marker referring to a paragraph beside it.
+\end{itemize}
+For short and simple content, \MDWordmark provides the command
+
+
+\MDCodeBlock{20}
+
+
+The first argument is placed in the \texttt{MarginArea}, the second
+in the \texttt{TextArea}. Both objects begin at exactly the same
+vertical position.
+For example:
+
+
+\MDCodeBlock{21}
+
+
+\SyncMarginAndTextArea
+{This paragraph is not important!}
+{\emph{Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit, vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu libero, nonummy eget, consectetuer id, vulputate a, magna. Donec vehicula augue eu neque.}}
+
+\vspace{2ex}
+
+\noindent
+The command is intentionally implemented using two synchronized
+top-aligned minipages. It is not intended to provide a general
+two-column text layout. \MDWordmark has no need to duplicate the many
+existing solutions for ordinary multicolumn typesetting.
+
+The command form is particularly convenient when both objects are
+short. For longer or structurally more complex material, however,
+passing the complete contents as command arguments can make the
+document source difficult to read. For such cases, \MDWordmark also
+provides an environment-based form.
+
+\subsection{Synchronized content by the \emph{SynchronizedMarginAndTextArea} environment}
+
+For longer or more complex synchronized content, the \emph{environment}
+
+
+\MDCodeBlock{22}
+
+
+provides the same basic layout principle as
+\texttt{\textbackslash{}SyncMarginAndTextArea}, but without requiring the
+contents to be passed as command arguments.
+The two inner environments explicitly describe the semantic role of
+their contents: \texttt{TextInMarginArea} contains the material to be
+placed in the \texttt{MarginArea}, while \texttt{TextInTextArea}
+contains the associated main text.
+
+For example, the cat illustration and the accompanying text beginning
+with ``\emph{Such code describes the implementation rather than the
+	intention.}'' on Page~\MDRef{fig:mdlayout-tixi-measuring}{3} were
+typeset using:
+
+
+\MDCodeBlock{23}
+
+
+\begin{note}
+	The \texttt{SynchronizedMarginAndTextArea} \emph{environment} is, in contrast to
+	the \emph{command form} \verb|\SyncMarginAndTextArea{...}{...}|, robust against
+	\emph{verbatim} content.
+	The latter does not accept \emph{verbatim} content in its arguments.
+\end{note}
+
+% ============================================================================
+% Chapter Area environments
+% ============================================================================
+
+\chapter{Area Environments}
+\label{chap:area-environments}
+
+\section{HalfArea}
+
+The \texttt{HalfArea} environment extends the current text block into half
+of the MarginArea and gutter offset.
+
+\subsection{Syntax}
+
+
+
+\MDCodeBlock{24}
+
+
+
+\subsection{Example}
+
+\begin{HalfArea}
+
+
+\MDCodeBlock{25}
+
+
+\end{HalfArea}
+The environment is heading-aware.
+Section, subsection, and other supported KOMA-Script headings placed inside
+the environment are compensated automatically and remain correctly aligned.
+
+\section{FullArea}
+
+The \texttt{FullArea} environment extends content over the complete available
+page width.
+
+\subsection{Syntax}
+
+
+
+\MDCodeBlock{26}
+
+
+
+\subsection{Example}
+\begin{FullArea}
+	\begin{Center}
+		\includegraphics[width=0.7\linewidth]{images/mdlayout-tixi-juggling.webp}
+	\end{Center}
+\end{FullArea}
+
+
+\MDCodeBlock{27}
+
+
+Inside the environment, \verb|\linewidth| reflects the widened area supplied
+by \texttt{adjustwidth}.
+The environment is suitable for:
+\begin{itemize}
+	\item wide figures,
+	\item wide tables,
+	\item listings,
+	\item terminal output,
+	\item title pages,
+	\item wide chapter content.
+\end{itemize}
+Commands that perform their own page breaking, especially \verb|\part| and
+\verb|\chapter|, should generally be placed outside the environment.
+Their following content may then be enclosed in \texttt{FullArea}.
+
+\section{DirectoryArea}
+
+The \texttt{DirectoryArea} environment is a semantic alias of
+\texttt{HalfArea}.
+
+\subsection{Syntax}
+
+
+
+\MDCodeBlock{28}
+
+
+
+\subsection{Typical Use}
+
+
+
+\MDCodeBlock{29}
+
+
+It is intended for:
+\begin{itemize}
+	\item table of contents,
+	\item list of figures,
+	\item list of tables,
+	\item bibliography,
+	\item glossary,
+	\item index.
+\end{itemize}
+Although its implementation is identical to \texttt{HalfArea}, its name
+expresses the intended purpose of the content.
+
+\section{MarginArea}
+
+The \texttt{MarginArea} environment places ordinary material into the usable
+left column.
+
+\subsection{Syntax}
+
+
+
+\MDCodeBlock{30}
+
+
+The environment excludes the gutter and occupies only the configured
+MarginArea width.
+It is intended for explicitly positioned material.
+For figures synchronized with surrounding text, use
+\texttt{MarginFigure} instead.
+
+\section{Convenience Environments}
+
+The package also provides the following convenience environments:
+\begin{description}
+	\item[\texttt{FullCenter}]
+	A centred FullArea.
+	
+	\item[\texttt{MarginCenter}]
+	A centred MarginArea.
+	
+	\item[\texttt{widearea}]
+	Compatibility alias for \texttt{FullArea}.
+	
+	\item[\texttt{widecenter}]
+	Compatibility alias for \texttt{FullCenter}.
+\end{description}
+Lower-case aliases are also provided for selected area environments:
+
+
+\MDCodeBlock{31}
+
+
+
+
+% ============================================================================
+% Chapter MarginFigure
+% ============================================================================
+
+\chapter{Margin Figures}
+\label{chap:margin-figures}
+
+\section{Purpose}
+
+The \texttt{MarginFigure} environment places a small, referenceable,
+non-floating figure into the fixed MarginArea.
+It does not use LaTeX's \verb|\marginpar| mechanism because the MarginArea is
+not an outer page margin.
+It is a dedicated layout column inside the FullArea.
+
+\section{Syntax}
+
+
+
+\MDCodeBlock{32}
+
+
+The optional argument controls the caption font size.
+The default is:
+
+
+\MDCodeBlock{33}
+
+
+Other declarations may be used, for example:
+
+
+\MDCodeBlock{34}
+
+
+	or:
+
+
+\MDCodeBlock{35}
+
+
+	
+\section{Caption Formatting}
+ 
+MarginFigure captions use a compact format suitable for the narrow column.
+The caption is:
+\begin{itemize}
+	\item set without hanging indentation,
+	\item left aligned,
+	\item allowed to wrap across the complete MarginArea width,
+	\item formatted using the selected optional font size.
+\end{itemize}
+Global caption colours and label styles remain available.
+ 
+\section{Example}
+
+\begin{MarginFigure}[\footnotesize]
+	\includegraphics[width=\linewidth]{images/mdlayout-tixi-juggling.webp}
+	\caption{Tixi handles MarginArea, FullArea, and TextArea
+		in a playful manner.}
+	\MDLabel{fig:mdlayout-tixi-juggling}
+\end{MarginFigure}
+The top edge of MarginFigure \MDRef{fig:mdlayout-tixi-juggling}{4} 
+is aligned approximately with the first line of the following text.
+There should be no empty paragraph between \verb|\end{MarginFigure}| and the
+associated text.
+
+
+\MDCodeBlock{36}
+
+
+
+	
+\section{Non-floating Behaviour}
+	
+\texttt{MarginFigure} is intentionally non-floating.
+It remains at the source position chosen by the author.
+No automatic vertical repositioning is performed.
+This has the following consequences:
+\begin{itemize}
+	\item the author must select a sufficiently long accompanying text passage;
+	\item the figure must not extend below the page boundary;
+	\item following headings must not overlap the figure;
+	\item multiple MarginFigures must not occupy the same vertical region.
+\end{itemize}
+These conditions are part of the semantics of a fixed, non-floating object.
+If automatic placement is required, use the standard \texttt{figure}
+environment or \texttt{widefigure}.
+	
+\section{Use Inside Lists}
+	
+MarginFigure compensates for the current accumulated list indentation.
+It can therefore be placed inside environments such as:
+\begin{itemize}
+	\item \texttt{description},
+	\item \texttt{itemize},
+	\item \texttt{enumerate}.
+\end{itemize}
+Its horizontal position remains fixed at the left edge of the MarginArea.
+
+% ============================================================================
+% Chapter Wide figures and tables
+% ============================================================================
+
+\chapter{Wide Figures and Tables}
+\label{chap:wide-objects}
+	
+\section{widefigure}
+
+The \texttt{widefigure} environment combines the standard floating
+\texttt{figure} environment with \texttt{FullArea}.
+
+\subsection{Syntax}
+	
+
+
+\MDCodeBlock{37}
+
+
+	
+The  placement specification is:
+	
+
+
+\MDCodeBlock{38}
+
+
+	
+\subsection{Example}
+	
+
+
+\MDCodeBlock{39}
+
+
+The environment remains a normal LaTeX float.
+Its placement is therefore controlled by LaTeX.
+	
+\section{widetable}
+The \texttt{widetable} environment is the table equivalent of
+	\texttt{widefigure}.
+	
+\subsection{Syntax}
+	
+
+
+\MDCodeBlock{40}
+
+
+	
+\subsection{Example}
+	
+
+
+\MDCodeBlock{41}
+
+
+	
+\section{widelongtable}
+	
+The \texttt{widelongtable} environment provides FullArea geometry for
+longtable-based environments such as \texttt{longtable} and
+\texttt{xltabular}.
+	
+\subsection{Syntax}
+	
+
+
+\MDCodeBlock{42}
+
+
+	
+\subsection{Example}
+	
+
+
+\MDCodeBlock{43}
+
+
+The environment locally configures the internal longtable alignment so that
+the table begins at the left edge of the FullArea.
+It also compensates the caption-package offset that would otherwise move a
+longtable caption too far to the right.
+The package \texttt{longtable} or \texttt{xltabular} must be loaded before
+using this environment.
+	
+% ============================================================================
+% Chapter Headings and page styles
+% ============================================================================
+	
+\chapter{Headings, Headers, and Footers}
+\label{chap:headings}
+	
+\section{Wide Headings}
+	
+When the option
+
+
+\MDCodeBlock{44}
+
+
+is enabled, KOMA-Script headings are extended to the FullArea.
+The package supports:
+\begin{itemize}
+	\item parts,
+	\item chapters,
+	\item unnumbered chapter-level headings,
+	\item sections,
+	\item lower section levels.
+\end{itemize}
+Numbering, prefix handling, fonts, language, and semantic heading behaviour
+remain under KOMA-Script control.
+Only the horizontal geometry and optional rules are modified.
+	
+\section{Heading Compensation Inside Areas}
+	
+The area environments communicate their horizontal offset to the heading
+formatter.
+This prevents headings from being shifted twice when they occur inside:
+\begin{itemize}
+	\item \texttt{HalfArea},
+	\item \texttt{DirectoryArea},
+	\item \texttt{FullArea}.
+\end{itemize}
+
+\section{Chapter and Section Rules}
+
+Optional decorative rules may be applied to chapter and section headings.
+The relevant package options are:
+
+
+\MDCodeBlock{45}
+
+
+A rule width of \texttt{0pt} disables the corresponding rule.
+
+\section{Wide Headers and Footers}
+
+When
+
+
+\MDCodeBlock{46}
+
+
+	is enabled, page headers and footers extend across the FullArea.
+	The package installs a \texttt{scrlayer-scrpage} page style.
+	In two-sided documents:
+	\begin{itemize}
+		\item even pages show the page number on the left and the running heading
+		on the right;
+		\item odd pages show the running heading on the left and the page number
+		on the right.
+	\end{itemize}
+	Chapter-opening pages use \texttt{plain.scrheadings} with a centred page
+	number in the footer.
+	
+% ============================================================================
+% Chapter Package options
+% ============================================================================
+\chapter{Package Options}
+\label{chap:options}
+The \MDWordmark package supports the options given in
+Table~\MDRef{tab:PackageOptions}{1}.
+
+%% Conventional table typesetting
+%\begin{widelongtable}
+%	\begin{xltabular}{\fullwidth}{>\MDStyle{tex-ttfamily}{}llX} 
+%		\caption{Package Options}
+%		\MDLabel{tab:PackageOptions}\\
+%		
+%		% 1. Head of first page
+%		\toprule
+%		\multicolumn{1}{l}{\textbf{Option}} & \textbf{Default} & \textbf{Description}\\
+%		\midrule
+%		\endfirsthead % Beendet den Kopf der ersten Seite
+%		
+%		% 2. Head of following pages
+%		\toprule
+%		\multicolumn{1}{l}{\textbf{Option}} & \textbf{Default} & \textbf{Description}\\
+%		\midrule
+%		\endhead % Beendet den Kopf für alle weiteren Seiten
+%		
+%		% 3. Foot for pages continued pages
+%		\midrule
+%		\multicolumn{3}{r}\MDStyle{tex-size-small}{\textit{continued...}} \\
+%		\bottomrule
+%		\endfoot 
+%		
+%		% 4. Foot for last page
+%		\bottomrule
+%		\endlastfoot
+%		\textbf{Option} &
+%		\textbf{Default} &
+%		\textbf{Description}
+%		\\
+%		\hline
+%		\endhead
+%		
+%		\texttt{marginwidth} &
+%		\texttt{35mm} &
+%		Width of the usable MarginArea.
+%		\\
+%		
+%		\texttt{gutter} &
+%		\texttt{5mm} &
+%		Horizontal separation between MarginArea and TextArea.
+%		\\
+%		
+%		\texttt{rightmargin} &
+%		empty &
+%		Physical right page margin. If omitted, the calculated KOMA-Script right
+%		margin is retained.
+%		\\
+%		
+%		\texttt{bottommargin} &
+%		empty &
+%		Physical distance between the lower text edge and the paper. If omitted,
+%		the calculated KOMA-Script text height is retained.
+%		\\
+%		
+%		\texttt{wideheadings} &
+%		\texttt{true} &
+%		Moves supported KOMA-Script headings to the left edge of the FullArea.
+%		\\
+%		
+%		\texttt{wideheadfoot} &
+%		\texttt{true} &
+%		Extends page headers and footers over the FullArea.
+%		\\
+%		
+%		\texttt{headsepline} &
+%		\texttt{0.4pt} &
+%		Thickness of the separator below the page header. Use \texttt{false} to
+%		disable it.
+%		\\
+%		
+%		\texttt{plainheadsepline} &
+%		\texttt{true} &
+%		Shows the header separator on plain chapter-opening pages.
+%		\\
+%		
+%		\texttt{chapterrule} &
+%		\texttt{1.2pt} &
+%		Thickness of the rule used with chapter headings.
+%		\\
+%		
+%		\texttt{sectionrule} &
+%		\texttt{0.4pt} &
+%		Thickness of the rule used with section headings.
+%		\\
+%		
+%		\texttt{headingrulecolor} &
+%		\texttt{black} &
+%		Colour used for chapter and section heading rules.
+%		\\
+%		
+%		\texttt{chapterrulegap} &
+%		\texttt{0.55\textbackslash{}baselineskip} &
+%		Vertical separation between chapter rule and chapter heading.
+%		\\
+%		
+%		\texttt{sectionrulegap} &
+%		\texttt{0.35\textbackslash{}baselineskip} &
+%		Vertical separation associated with the section rule.
+%		\\
+%		
+%		\texttt{showlayout} &
+%		\texttt{false} &
+%		Writes the calculated layout dimensions to the log file.\\
+%	\end{xltabular}
+%\end{widelongtable}
+
+% The following source of ReferenceTable describes the semantics of the table 
+% rather than its typesetting mechanics.
+ 
+%mdDefaultMarginwidth=38mm
+\MDReferenceTable{0}
+
+\begin{FullArea}
+	\begin{note}
+		\textbf{Implementation Note:}\\
+		The table itself is implemented using \texttt{ReferenceTable};
+		for details, see Chapter~\MDRef{chap:ReferenceTables}{15}.
+		Its first column reproduces option names verbatim, while its second
+		column uses normal \LaTeX{} processing in typewriter style.
+		The relevant part of its definition\footnote{The
+			values in the second column are not duplicated as literal values in
+			the documentation source. Instead, they are obtained from public
+			definitions provided by \MDWordmark itself. For example,
+			\texttt{\textbackslash{}mdDefaultMarginwidth} expands to the default value
+			of the \texttt{marginwidth} option.}
+		is:
+
+
+\MDCodeBlock{168}
+
+
+	\end{note}
+\end{FullArea}
+
+\noindent\textbf{Remarks:}
+\begin{itemize}
+	\item  With \texttt{widetitle=true}, both titles generated by 
+	\texttt{\textbackslash{}maketitle} and explicit \texttt{titlepage}
+	environments use the \texttt{FullArea}. Consequently, an explicit
+	\texttt{FullArea} environment should not be nested inside a
+	\texttt{titlepage} environment.
+	With \texttt{widetitle=false}, the original KOMA-Script title layout
+	is retained.
+	
+	\item \texttt{articletitlerule=<length>} sets the thickness of the horizontal 
+	rules surrounding the document 	title in the \texttt{scrartcl} class.
+	The rules extend across the \texttt{FullArea} and visually relate the 
+	article title to the ruled section headings used by \MDWordmark.
+	A value of \texttt{0pt} \emph{disables} the title rules.
+	
+	\item The following three \texttt{min...} parameters control automatic
+	layout adaptation for small paper sizes, such as \emph{DIN A5 paper}.
+	If the requested layout does not fit on the available paper width,
+	\MDWordmark first reduces the \texttt{MarginArea} down to
+	\texttt{minmarginwidth}. If this is not sufficient, the
+	\texttt{TextArea} is subsequently reduced down to
+	\texttt{mintextwidth}. The \texttt{gutter}, \texttt{rightmargin}, and
+	the minimum physical left margin (\texttt{minleftmargin}) remain unchanged.
+	If a valid layout cannot be obtained without violating these minimum
+	dimensions, \MDWordmark reports an error.
+	
+	For DIN A5 paper, a balanced layout can, for example, be obtained with:
+
+
+\MDCodeBlock{47}
+
+
+	This gives the \texttt{FullArea} equal margins of 15\,mm on
+	the left and right while retaining the automatic adaptation of the
+	\texttt{MarginArea} and \texttt{TextArea}.
+	
+\end{itemize}
+
+
+% ============================================================================
+% Chapter Public dimensions and commands
+% ============================================================================
+
+\chapter{Public Dimensions and Commands}
+\label{chap:public-api}
+
+\section{Public Dimensions}
+
+The package exposes the calculated layout dimensions listed in Table~\MDRef{tab:PublicDimensions}{2}.
+%% Conventional table construction:
+%\begin{longtable}{@{}p{.34\textwidth}p{.58\textwidth}@{}}
+%	\textbf{Dimension} &
+%	\textbf{Meaning}
+%	\\
+%	\hline
+%	\endhead
+%	
+%	\verb|\mdTextWidth| &
+%	Width of the normal TextArea.
+%	\\
+%	
+%	\verb|\mdFullWidth| &
+%	Complete width of MarginArea, gutter, and TextArea.
+%	\\
+%	
+%	\verb|\mdMarginWidth| &
+%	Width of the usable MarginArea.
+%	\\
+%	
+%	\verb|\mdGutterWidth| &
+%	Width of the gutter.
+%	\\
+%	
+%	\verb|\mdWideOffset| &
+%	Horizontal distance from the left edge of TextArea to the left edge of
+%	FullArea.
+%	\\
+%	
+%	\verb|\mdHalfOffset| &
+%	Half of the wide offset.
+%	\\
+%	
+%	\verb|\mdHalfWidth| &
+%	Width of TextArea plus half the wide offset.
+%	\\
+%	
+%	\verb|\mdRightMargin| &
+%	Physical right page margin.
+%	\\
+%	
+%	\verb|\mdBottomMargin| &
+%	Physical lower page margin.
+%	\\
+%	
+%	\verb|\mdFullLeft| &
+%	Physical position of the left edge of FullArea measured from the left paper
+%	edge.
+%	\\
+%	
+%	\verb|\mdFullRight| &
+%	Physical position of the right edge of FullArea.
+%	\\
+%	
+%	\verb|\mdMarginLeft| &
+%	Physical position of the left edge of MarginArea.
+%	\\
+%	
+%	\verb|\mdMarginRight| &
+%	Physical position of the right edge of MarginArea.
+%	\\
+%	
+%	\verb|\mdTextLeft| &
+%	Physical position of the left edge of TextArea.
+%	\\
+%	
+%	\verb|\mdTextRight| &
+%	Physical position of the right edge of TextArea.
+%	\\
+%	
+%\end{longtable}
+This table was typeset by:
+
+
+\MDCodeBlock{169}
+
+
+
+\MDReferenceTable{1}
+
+\section{Compatibility Dimensions}
+
+The package also provides compatibility names:
+
+
+\MDCodeBlock{48}
+
+
+New documents should preferably use the explicit \verb|\md...| names.
+
+\section{\texttt{\textbackslash ShowMDLayout}}
+
+The command
+
+
+\MDCodeBlock{49}
+
+
+prints a table of the calculated dimensions inside the document.
+It is useful during layout development and diagnostics.
+
+\section{\texttt{\textbackslash mdlayoutrecalculate}}
+
+The command
+
+
+\MDCodeBlock{50}
+
+
+recalculates the layout using the current text width and side margins.
+It may be useful after document-class or layout changes that occur after the
+package has been loaded.
+
+\paragraph{Small paper formats.}
+On smaller paper formats, \MDWordmark automatically reduces the
+\texttt{MarginArea} and, if necessary, the \texttt{TextArea}, while
+respecting their configured minimum widths.
+For A5 paper, a balanced layout can for example be obtained with:
+
+
+\MDCodeBlock{51}
+
+
+This gives the \texttt{FullArea} equal physical margins of 15\,mm on
+the left and right while retaining the adaptive behaviour of
+\MDWordmark for the \texttt{MarginArea} and \texttt{TextArea}.
+
+\section{Convenience Commands}
+
+The package also provides:
+
+\newcommand*{\cmdsyntax}[1]{%
+	\texttt{\detokenize{#1}}%
+}
+
+\begin{description}
+	
+	\item[\MDCodeInline{0}]
+	Centres its argument inside \texttt{FullArea}.
+	
+	\item[\MDCodeInline{1}]
+	Places its argument inside \texttt{MarginArea}.
+	
+	\item[\MDCodeInline{2}]
+	Draws a horizontal rule across \texttt{FullArea}.
+	The default thickness is \texttt{0.4pt}.
+	
+	\item[\MDCodeInline{3}]
+	Typesets its contents in a verbatim-like typewriter layout while
+	retaining normal \LaTeX{} command processing.
+	Unlike the standard \texttt{verbatim} environment, commands inside
+	\texttt{typewriter} are evaluated. Thus, for example,	
+
+
+\MDCodeBlock{52}
+
+
+	displays the current definition of
+	\texttt{\textbackslash{}mdDefaultRightmargin} in typewriter style rather than
+	printing the command name literally.
+	The environment is intended for code-like documentation in which
+	selected \LaTeX{} definitions should remain active.
+	
+	\item[\texttt{\textbackslash{}company\{<company>\}}]
+	Specifies optional company or institutional information associated
+	with the document.
+	
+	The company is included in the document title information. In
+	\texttt{scrbook} and \texttt{scrreprt}, it is additionally displayed
+	at the physical left side of the footer below the \texttt{MarginArea}.
+	The existing page header, including the page number, is not modified.
+	
+	If \texttt{\textbackslash{}company} is not specified, no company information
+	is displayed and the footer remains unchanged.
+	
+\end{description}
+	
+% ============================================================================
+% Chapter Version information
+% ============================================================================
+
+\chapter{Version Information}
+\label{chap:version-information}
+
+\section{Package Metadata}
+
+The package provides the following public macros:
+
+
+\MDCodeBlock{53}
+
+
+For version 0.8.3 they expand conceptually to:
+
+
+\MDCodeBlock{54}
+
+
+
+\section{Revision Number Encoding}
+
+The numeric revision number is generated automatically from the semantic
+version.
+The encoding follows:
+
+
+\MDCodeBlock{55}
+
+
+Examples:
+
+
+\MDCodeBlock{56}
+
+
+The major component may contain more than two digits.
+The minor and patch components are encoded using two digits.
+Leading zeros do not affect numerical comparisons in TeX.
+\section{Conditional Version Tests}
+
+The command
+
+
+\MDCodeBlock{57}
+
+
+executes the supplied code if the installed package revision is at least the
+requested value.
+
+\noindent Example:
+
+
+\MDCodeBlock{58}
+
+
+A direct numerical test is also possible:
+
+
+\MDCodeBlock{59}
+
+
+
+
+% ============================================================================
+% Chapter Examples
+% ============================================================================
+
+\chapter{Examples}
+
+\section{Math-mode symbols}
+
+\begin{FullArea}
+	Here we have a wide table of \LaTeXe\ math symbols in a \texttt{tabular} environment. This \texttt{tabular} is embedded in a \texttt{FullArea}:\\[2ex]
+\begin{footnotesize}
+\MDTabular{2}
+\end{footnotesize}
+\end{FullArea}
+
+\section{Long commands}
+Here is a Unix example for process monitoring:
+
+
+\MDCodeBlock{60}
+
+
+It was typeset using the following commands:\\[1ex]
+\latex{\begin{verbatim}}
+
+
+\MDCodeBlock{61}
+
+
+\noindent\latex{\end{verbatim}}\\[1ex]
+Here is the same example printed in one line.
+
+
+\MDCodeBlock{171}
+
+
+This was typeset by:
+\begin{FullArea}
+\latex{\begin{wideverbatim}}
+
+
+\MDCodeBlock{62}
+
+
+\noindent\latex{\end{wideverbatim}}\\[1ex]
+\end{FullArea}
+\noindent \textbf{Note:} The lines of \LaTeX\ code above (\verb|\begin{wideverbatim}...|) were typeset using \textbf{FullArea}. The commands used for this can be found in the source file \texttt{mdlayout-doc.tex} and in the following listing.
+
+
+\MDCodeBlock{172}
+
+
+The listing has been typeset by:
+
+
+\MDCodeBlock{170}
+
+
+
+\section{Using \textbackslash SyncMarginAndTextArea for Annotations}
+
+The purpose of \textbf{\textbackslash SyncMarginAndTextArea} is to establish a \emph{fixed} semantic relationship
+between a relatively small object in the margin and the corresponding
+content in the text area.
+Consequently, the complete synchronized object is kept together and is
+not broken across pages. This is normally desirable: a margin annotation
+that becomes separated from the paragraph, figure, warning, or other
+object to which it refers would lose its meaning.
+For this reason, both arguments should normally remain \emph{reasonably short}.
+If a large amount of parallel text is required, a genuine multicolumn or
+table-based layout is more appropriate.
+
+\SyncMarginAndTextArea
+{%
+	\textbf{Note:}
+}
+{%
+	\textbf{\texttt{\textbackslash SyncMarginAndTextArea} is not a
+		two-column environment.}
+	
+	It is intended to establish a fixed semantic relationship between a
+	small object in the margin and its associated object in the text
+	area. Both objects always start on the same line and remain on the
+	same page.
+}
+
+\ %
+
+\noindent This \emph{Note} has been typeset by:
+
+
+\MDCodeBlock{64}
+
+
+
+ 
+\SyncMarginAndTextArea{\mdSeeRight}
+{%
+	The purpose of this command is not to place two independent 
+	text columns side by side. Instead, it represents a single 
+	semantic document element whose content happens to occupy 
+	both the margin area and the text area.
+}
+\ %
+
+\noindent In the example above, we used \verb|\mdSeeRight| to draw attention to the text:
+
+
+\MDCodeBlock{65}
+
+
+ 
+\chapter{The \texttt{Printout} Environment}
+\begin{center}
+	\includegraphics[width=0.85\linewidth]{images/mdlayout-tixi-Printout.webp}
+\end{center}
+The \texttt{Printout} environment is designed for displaying
+machine-generated output such as system logs, compiler listings,
+terminal sessions, spool files, printer output, or reports produced by
+external programs.
+
+Unlike traditional source-code listings, a printout represents an
+already existing document whose visual structure is part of its meaning.
+The original line lengths, column positions and spacing should therefore
+be preserved as accurately as possible.
+
+Consequently, \texttt{Printout} should not be regarded as another
+listing environment. It is a semantic environment for typesetting
+computer printouts.
+
+\section{Printout versus Listings}
+
+Packages such as \texttt{listings} or \texttt{minted} are intended for
+typesetting source code. They provide syntax highlighting, language
+support and formatting facilities that help understanding a program.
+Machine-generated output has completely different requirements.
+A compiler listing, system log or printer spool already possesses its
+final formatting. Reformatting the text may destroy the alignment of
+columns or even change the interpretation of the output.
+
+For this reason, the \texttt{Printout} environment never attempts to
+reformat its contents. Instead, it preserves the original character
+layout while adapting the font size only if required.
+
+\section{Automatic Column Fitting}
+
+Perhaps the most important feature of \texttt{Printout} is that the
+logical width of the output is specified instead of a font size.
+The option
+
+
+\MDCodeBlock{66}
+
+
+declares that at least \texttt{n} monospaced characters shall fit into
+the available print area.
+
+\noindent For example,
+
+
+\MDCodeBlock{67}
+
+
+requests normal-sized text whenever possible.
+Only if 132 columns would no longer fit into the available width is the
+font automatically reduced.
+Thus the author specifies the semantic width of the printout instead of
+experimenting with font sizes.
+This behaviour is particularly useful for compiler listings, JES output,
+terminal logs and similar documents whose logical width is fixed.
+
+\section{Printout Forms}
+
+The appearance of the printout is controlled by the
+\texttt{form=} option.
+A form is simply a predefined collection of ordinary
+\texttt{Printout} options.
+All values supplied after \texttt{form=} override the preset values.
+The package currently provides the following forms.
+\begin{description}
+	\item[\texttt{plain}]
+	Produces plain machine output without any graphical paper decoration.
+	This form is intended as a general-purpose verbatim printout while still
+	benefiting from automatic column fitting.
+	
+	\item[\texttt{simple}]
+	Displays the traditional green-bar paper without tractor-feed holes or
+	line numbers.
+
+	\item[\texttt{green}]
+	Displays continuous green-bar paper with tractor-feed holes and
+	functional line numbers.
+	
+	\item[\texttt{blue}]
+	Equivalent to \texttt{green}, but using blue paper stripes.
+	
+	\item[\texttt{ibm1403}]
+	Emulates the appearance of a classical IBM 1403 line-printer listing.
+	This preset uses 60 printable lines per paper page, three-line green
+	bars and a smaller font size.
+\end{description}
+A typical example is
+
+
+\MDCodeBlock{68}
+
+
+Individual properties may easily be overridden.
+
+
+\MDCodeBlock{69}
+
+
+The printout keeps the appearance of the green-bar form while using
+virtual paper pages consisting of 200 text lines.
+
+\section{Paper Geometry}
+Unlike ordinary verbatim environments, \texttt{Printout} models the
+geometry of continuous fan-fold paper.
+Depending on the selected form, the following elements may be displayed.
+\begin{itemize}
+	\item coloured paper bands,
+	\item paper borders,
+	\item virtual tear-off perforations,
+	\item tractor-feed holes,
+	\item functional line numbers.
+\end{itemize}
+All geometric elements are derived from the actual height and depth of
+the current text line. Consequently, changing the font size
+automatically preserves the visual proportions of the paper.
+
+\section{Functional Line Numbers}
+The optional line numbers are not merely decorative.
+Every physical output line receives an explicit number, making it easy
+to reference individual lines in compiler listings, system logs or spool
+files.
+Since the numbering restarts on every virtual paper page, even extremely
+large printouts remain easy to navigate.
+
+\section{Virtual Continuous Paper}
+
+Real fan-fold paper consists of separate sheets connected by
+perforations.
+The option
+
+
+\MDCodeBlock{70}
+
+
+defines the number of text lines per virtual sheet.
+Whenever the specified number of lines has been printed, a virtual
+tear-off perforation is inserted and the line numbering restarts with~1.
+
+\noindent For example,
+
+
+\MDCodeBlock{71}
+
+
+reproduces the appearance of a traditional 60-line IBM line-printer
+listing, whereas
+
+
+\MDCodeBlock{72}
+
+
+creates virtually continuous paper suitable for long log files.
+\section{Examples}
+\subsection{Printout Example: IBM 1403 line printer output with 132 chars}
+\begin{MarginFigure}
+	\MDLabel{fig:mdlayout-tixi-mainframe-color}
+	\includegraphics[width=\mdMarginWidth]{images/mdlayout-tixi-mainframe-color.webp}
+\end{MarginFigure}
+The following example shows a printout orientated on the vintage IBM line printer model 1403.
+
+
+\MDCodeBlock{73}
+
+
+\vspace{2ex}
+\begin{Printout}[
+	form=ibm1403,
+	paperheight=60,
+	bandlines=3,
+	feedlines=3,
+	fitcolumns=132,
+	linenumbers=true,
+	punchholes=true,
+	fontsize=\scriptsize
+	]
+HH        HH  EEEEEEEEEEEE  RRRRRRRRRRR    CCCCCCCCCC     00000000         11       ZZZZZZZZZZZZ  ZZZZZZZZZZZZ
+HH        HH  EEEEEEEEEEEE  RRRRRRRRRRRR  CCCCCCCCCCCC   0000000000       111       ZZZZZZZZZZZZ  ZZZZZZZZZZZZ 
+HH        HH  EE            RR        RR  CC        CC  00      0000     1111                ZZ            ZZ   
+HH        HH  EE            RR        RR  CC            00     00 00       11               ZZ            ZZ     
+HH        HH  EE            RR        RR  CC            00    00  00       11              ZZ            ZZ       
+HHHHHHHHHHHH  EEEEEEEE      RRRRRRRRRRRR  CC            00   00   00       11          ZZZZZZZ       ZZZZZZZ       
+HHHHHHHHHHHH  EEEEEEEE      RRRRRRRRRRR   CC            00  00    00       11          ZZZZZZZ       ZZZZZZZ        
+HH        HH  EE            RR    RR      CC            00 00     00       11           ZZ            ZZ             
+HH        HH  EE            RR     RR     CC            0000      00       11          ZZ            ZZ               
+HH        HH  EE            RR      RR    CC        CC  000       00       11         ZZ            ZZ                 
+HH        HH  EEEEEEEEEEEE  RR       RR   CCCCCCCCCCCC   0000000000    1111111111    ZZZZZZZZZZZ   ZZZZZZZZZZZ          
+HH        HH  EEEEEEEEEEEE  RR        RR   CCCCCCCCCC     00000000     1111111111   ZZZZZZZZZZZZ  ZZZZZZZZZZZZ           
+
+
+
+  JJJJJJJJJJ  OOOOOOOOOOOO  BBBBBBBBBBB     00000000      00000000     8888888888   777777777777        444             AAAAAAAAAA 
+  JJJJJJJJJJ  OOOOOOOOOOOO  BBBBBBBBBBBB   0000000000    0000000000   888888888888  77777777777        4444            AAAAAAAAAAAA
+      JJ      OO        OO  BB        BB  00      0000  00      0000  88        88  77      77        44 44            AA        AA
+      JJ      OO        OO  BB        BB  00     00 00  00     00 00  88        88         77        44  44            AA        AA
+      JJ      OO        OO  BB       BB   00    00  00  00    00  00   88      88         77        44   44            AA        AA
+      JJ      OO        OO  BBBBBBBBBB    00   00   00  00   00   00    88888888         77        44444444444         AAAAAAAAAAAA
+      JJ      OO        OO  BBBBBBBBBB    00  00    00  00  00    00    88888888         77       444444444444         AAAAAAAAAAAA
+      JJ      OO        OO  BB       BB   00 00     00  00 00     00   88      88        77              44            AA        AA
+JJ    JJ      OO        OO  BB        BB  0000      00  0000      00  88        88       77              44            AA        AA
+JJ    JJ      OO        OO  BB        BB  000       00  000       00  88        88       77              44            AA        AA
+JJJJJJJJ      OOOOOOOOOOOO  BBBBBBBBBBBB   0000000000    0000000000   888888888888       77              44            AA        AA
+ JJJJJJ       OOOOOOOOOOOO  BBBBBBBBBBB     00000000      00000000     8888888888        77              44            AA        AA
+
+
+****A  START  JOB    JOB00874     HERC01ZZ   Compress a pds   04.19.13 PM 07 Aug  SYS    HOST09     JOB    JOB00874     START  A****
+****A  START  JOB    JOB00874     HERC01ZZ   Compress a pds   04.19.13 PM 07 Aug  SYS    HOST09     JOB    JOB00874     START  A****
+****A  START  JOB    JOB00874     HERC01ZZ   Compress a pds   04.19.13 PM 07 Aug  SYS    HOST09     JOB    JOB00874     START  A****
+****A  START  JOB    JOB00874     HERC01ZZ   Compress a pds   04.19.13 PM 07 Aug  SYS    HOST09     JOB    JOB00874     START  A****
+
+
+J E S 2   J O B   L O G  --  B R A I N . R E P O R T / E V A L  S Y S T E M
+
+16:19:13 JOB00874 IEF501I JOB HERC01ZZ 'Compress a pds' CLASS A - JES2 SUBMISSION STARTED
+16:19:13 JOB00874 IEF600I PRE-VALIDATING JCL
+16:19:13 JOB00874 IEF601I JCL PRE-VALIDATED
+000001 //* SYS2.JCLLIB.COMPRESS.JCL
+000002 //HERC01ZZ JOB (COMPRESS),'Compress a pds',CLASS=A,MSGCLASS=P           
+000003 //* USER=HERC01,PASSWORD=xxxxxxxx                                       
+000004 //*                                                                     
+000005 //********************************************************************  
+000006 //*                                                                     
+000007 //*  Name: SYS2.JCLLIB(COMPRESS)                                        
+000008 //*                                                                     
+000009 //*  Desc: Compress a PDS                                               
+000010 //*  Step environment variable: DEBUG=TRUE                              
+000011 //********************************************************************  
+000012 //*                                                                     
+000013 //*                                                                     
+000014 //DELETE   EXEC PGM=IEFBR14                                             
+000015 //LIB2DEL  DD   DISP=DEL,                                               
+000016 //              DSN=HERC01.TEST.LOADLIB2,                               
+000017 //              DSNTYPE=LIBRARY                                         
+000018 //SYSOUT   DD   SYSOUT=*                                                
+000019 //COMPRESS EXEC PGM=IEBCOPY,PARM='ENVAR("DEBUG=TRUE")/'                 
+000020 //SYSPRINT DD   SYSOUT=*                                                
+000021 //SYSOUT   DD   SYSOUT=*                                                
+000022 //SYSUT1   DD   DISP=SHR,                                               
+000023 //              DSN=HERC01.TEST.LOADLIB                                 
+000024 //SYSUT2   DD   DISP=NEW,                                               
+000025 //              DSN=HERC01.TEST.LOADLIB2,                               
+000026 //              DSNTYPE=LIBRARY                                         
+000027 //SYSIN    DD   *                                                       
+000028 COPY INDD=SYSUT1,OUTDD=SYSUT2                                           
+000029 SELECT MEMBER=(MEMBER1)                                                 
+000030 /*                                                                      
+000031 //                                                                      
+16:19:13 JOB00874 IRR010I USERID '' IS ASSIGNED TO THIS JOB.
+16:19:13 JOB00874 IEF236I JOB HERC01ZZ STARTED - CLASS A - 2026-08-07 16:19:13
+16:19:13 JOB00874 IEF237I ACCT=COMPRESS
+16:19:13 JOB00874 $HASP373 HERC01ZZ MSGCLASS=P MSGLEVEL=(1,1) Compress a pds
+16:19:13 JOB00874 IEF373I STEP/DELETE/STARTED AT 2026-08-07 16:19:13
+16:19:13 JOB00874 IEF574I ENVAR LIB2DEL=/data/eval/tso/JES2CAT/HERC01.TEST.LOADLIB2
+16:19:13 JOB00874 IEC043I DELETING PDSE LIBRARY (HERC01.TEST.LOADLIB2)
+16:19:13 JOB00874 IEC032I DELETE HERC01.TEST.LOADLIB2 (PDSE DATASET DELETED)
+16:19:13 JOB00874 IEC231I USING DEFAULT TIMEOUT 20 SECONDS (empty TIME string)
+------ SYSOUT BEGIN ------
+------- SYSOUT END -------
+16:19:13 JOB00874 IEF374I STEP/DELETE/ENDED AT 2026-08-07 16:19:13 RC=0000
+16.19.13 JOB00874 - ============================================================================================================
+16.19.13 JOB00874 -                         REGION MAX CPU     ---- STEP TIMINGS ----                ----PAGING COUNTS----
+16.19.13 JOB00874 - STEPNAME PGMNAME    CC    USED    LOAD     CPU TIME  ELAPSED TIME   EXCP  SERV  PAGE  SWAP  VIO SWAPS
+16.19.13 JOB00874 - DELETE   HERC01ZZ 0000  1024K      0%  00:00:00.00   00:00:00.00     24    60     0     0    0     0
+16.19.13 JOB00874 IEF404I DELETE - ENDED - 0 WARNING(S) - TIME=16.19.13
+16.19.13 JOB00874 - ============================================================================================================
+16:19:13 JOB00874 IEF373I STEP/COMPRESS/STARTED AT 2026-08-07 16:19:13
+16:19:13 JOB00874 IEF574I STEP ENVAR DEBUG=TRUE
+16:19:13 JOB00874 IEF574I ENVAR SYSUT1=/data/eval/tso/JES2CAT/HERC01.TEST.LOADLIB
+16:19:13 JOB00874 IEC040I ALLOCATING OLD/SHARED DATASET (HERC01.TEST.LOADLIB)
+16:19:13 JOB00874 IEF574I ENVAR SYSUT2=/data/eval/tso/JES2CAT/HERC01.TEST.LOADLIB2
+16:19:13 JOB00874 IEC041I ALLOCATING NEW PDS LIBRARY (HERC01.TEST.LOADLIB2)
+16:19:13 JOB00874 IEC231I USING DEFAULT TIMEOUT 20 SECONDS (empty TIME string)
+------ SYSOUT BEGIN ------
+DEBUG=TRUE
+SYSUT1=HERC01.TEST.LOADLIB
+SYSUT2=HERC01.TEST.LOADLIB2
+IEB101I COPYING FROM SYSUT1 TO SYSUT2
+IEB144I 1 COPIED, 1 SKIPPED, 0 REPLACED
+------- SYSOUT END -------
+\end{Printout}
+
+\subsection{Printout Example: User defined printout}
+The following example shows a printout following user definitions 
+
+
+\MDCodeBlock{74}
+
+
+\begin{Printout}[
+	form=blue,
+	paperheight=999,
+	bandlines=2,
+	feedlines=0,
+	fitcolumns=132,
+	linenumbers=true,
+	punchholes=false,
+	fontsize=\scriptsize
+	]
+This is LuaHBTeX, Version 1.24.0 (TeX Live 2026)  (format=lualatex 2026.6.20)  20 AUG 2026 08:59
+restricted system commands enabled.
+**mdlayout.tex
+(./mdlayout.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+Lua module: luaotfload 2024-12-03 v3.29 Lua based OpenType font support
+Lua module: lualibs 2023-07-13 v2.76 ConTeXt Lua standard libraries.
+Lua module: lualibs-extended 2023-07-13 v2.76 ConTeXt Lua libraries -- extended 
+collection.
+luaotfload | conf : Root cache directory is "/Users/deppe/Library/texlive/2026/t
+exmf-var/luatex-cache/generic/names".
+luaotfload | init : Loading fontloader "fontloader-2023-12-28.lua" from kpse-res
+olved path "/usr/local/texlive/2026/texmf-dist/tex/luatex/luaotfload/fontloader-
+2023-12-28.lua".
+Lua-only attribute luaotfload@noligature = 1
+luaotfload | init : Context OpenType loader version 3.134
+Inserting `luaotfload.node_processor' in `pre_linebreak_filter'.
+Inserting `luaotfload.node_processor' in `hpack_filter'.
+Inserting `luaotfload.glyph_stream' in `glyph_stream_provider'.
+Inserting `luaotfload.define_font' in `define_font'.
+Lua-only attribute luaotfload_color_attribute = 2
+luaotfload | conf : Root cache directory is "/Users/deppe/Library/texlive/2026/t
+exmf-var/luatex-cache/generic/names".
+Inserting `luaotfload.harf.strip_prefix' in `find_opentype_file'.
+Inserting `luaotfload.harf.strip_prefix' in `find_truetype_file'.
+Removing  `luaotfload.glyph_stream' from `glyph_stream_provider'.
+Inserting `luaotfload.harf.glyphstream' in `glyph_stream_provider'.
+Inserting `luaotfload.harf.finalize_vlist' in `post_linebreak_filter'.
+Inserting `luaotfload.harf.finalize_hlist' in `hpack_filter'.
+Inserting `luaotfload.cleanup_files' in `wrapup_run'.
+Inserting `luaotfload.harf.finalize_unicode' in `finish_pdffile'.
+Inserting `luaotfload.glyphinfo' in `glyph_info'.
+Lua-only attribute luaotfload.letterspace_done = 3
+Inserting `luaotfload.aux.set_sscale_dimens' in `luaotfload.patch_font'.
+Inserting `luaotfload.aux.set_font_index' in `luaotfload.patch_font'.
+Inserting `luaotfload.aux.patch_cambria_domh' in `luaotfload.patch_font'.
+Inserting `luaotfload.aux.fixup_fontdata' in `luaotfload.patch_font_unsafe'.
+Inserting `luaotfload.aux.set_capheight' in `luaotfload.patch_font'.
+Inserting `luaotfload.aux.set_xheight' in `luaotfload.patch_font'.
+Inserting `luaotfload.rewrite_fontname' in `luaotfload.patch_font'.
+Inserting `tracingstacklevels' in `input_level_string'. (/usr/local/texlive/202
+6/texmf-dist/tex/latex/koma-script/scrbook.cls
+Document Class: scrbook 2026/02/02 v3.49.2 KOMA-Script document class (book)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/koma-script/scrkbase.sty
+Package: scrkbase 2026/02/02 v3.49.2 KOMA-Script package (KOMA-Script-dependent
+basics and keyval usage)
+\end{Printout}
+
+\subsection{Printout Example: Plain Text}
+The following example shows a printout following user definitions 
+
+
+\MDCodeBlock{75}
+
+
+
+
+\MDCodeBlock{173}
+
+
+	
+\section{Summary}
+The purpose of \texttt{Printout} is not to provide another listing
+environment.
+Instead, it provides a semantic description of machine-generated output.
+The author specifies the logical properties of the printout---such as
+its width, paper geometry and appearance---while the package determines
+the appropriate typography automatically.
+
+This approach preserves the structure of historical and contemporary
+computer output without sacrificing typographical quality. 
+
+% ============================================================================
+\chapter{Reference Tables}
+\label{chap:ReferenceTables}
+% ============================================================================
+\begin{center}
+	\vspace{-10ex}
+	\includegraphics[width=0.8\linewidth]{images/mdlayout-tixi-ReferenceTable.webp}
+\end{center}
+% ----------------------------------------------------------------------------
+\section{Overview -- \texttt{ReferenceTable} Environment}
+% ----------------------------------------------------------------------------
+
+The \texttt{ReferenceTable} environment provides a compact and semantic
+interface for reference tables. It is intended primarily for tables such as
+command summaries, parameter descriptions, option lists, symbol tables, and
+similar reference material (e.g. Table~\MDRef{tab:PackageOptions}{1}, 
+page~\MDRef{tab:PackageOptions}{1} of this manual).
+
+Internally, \texttt{ReferenceTable} handles the more verbose setup normally
+required for \texttt{xltabular}, including table width, repeated table
+headings, rules, continuation information, and the final table footer.
+
+For example, instead of writing a complete \texttt{xltabular} definition such
+as
+
+
+
+\MDCodeBlock{76}
+
+
+
+\noindent
+the same table can be expressed much more compactly as
+
+
+
+\MDCodeBlock{77}
+
+
+The \texttt{ReferenceTable} environment is intended primarily for tables
+containing commands, parameters, file names, program output, shell
+expressions, JCL statements, configuration values, and other material where
+characters having a special meaning to \LaTeX{} must be reproduced literally.
+
+\begin{SynchronizedMarginAndTextArea}
+	\begin{TextInMarginArea}
+		{\centering\mdSeeRight\\}
+	\end{TextInMarginArea}
+	\begin{TextInTextArea}
+		\texttt{ReferenceTable} is therefore not merely a shorthand interface
+		for \texttt{xltabular} or the table-area environments provided by
+		\texttt{mdlayout}. Its \texttt{verbatimcolumn} facility changes how
+		the contents of selected table cells are read. Characters which would
+		normally be interpreted by \TeX{} are accepted as literal input.
+	\end{TextInTextArea}
+\end{SynchronizedMarginAndTextArea}
+For example, a verbatim column can contain input such as
+
+
+\MDCodeBlock{78}
+
+
+without having to protect the individual special characters for \LaTeX{}.
+This is particularly useful when reference tables are generated
+automatically. Text intended for a verbatim column can be transferred
+directly into the generated \LaTeX{} source without first applying the usual
+\LaTeX{} escaping rules to characters such as
+
+
+\MDCodeBlock{79}
+
+
+Thus, for selected columns, \texttt{ReferenceTable} can serve as an interface
+between externally generated textual data and a typeset table while
+preserving the original textual representation.
+
+At the same time, columns which are not declared as verbatim columns remain
+ordinary \LaTeX{} columns. A single table can therefore combine literal
+computer text with fully processed \LaTeX{} content.
+In addition to this verbatim functionality, \texttt{ReferenceTable} hides the
+technical setup normally required for multipage \texttt{xltabular} tables.
+
+% ----------------------------------------------------------------------------
+\section{Basic Syntax}
+% ----------------------------------------------------------------------------
+
+The number of table columns is specified with the \texttt{columns} option:
+
+
+\MDCodeBlock{80}
+
+
+The default is
+
+
+\MDCodeBlock{81}
+
+
+\texttt{ReferenceTable} is not restricted to a fixed maximum of two, three,
+or four columns. The n-column interface can be used for considerably wider
+table structures where appropriate.
+Column numbers used by the column-property options refer to the physical
+columns from left to right, beginning with column~1.
+The traditional syntax
+
+
+\MDCodeBlock{82}
+
+
+continues to be supported. It corresponds to
+
+
+\MDCodeBlock{83}
+
+
+and is the default header mode.
+For example, a traditional two-column table is written as
+
+
+\MDCodeBlock{84}
+
+
+and the traditional three-column form does not require an explicit
+\texttt{columns} option:
+
+
+\MDCodeBlock{85}
+
+
+
+% ----------------------------------------------------------------------------
+\section{Table Area}
+% ----------------------------------------------------------------------------
+
+The \texttt{area} option selects the horizontal area in which the table is
+placed.
+
+
+\MDCodeBlock{86}
+
+
+The default is
+
+
+\MDCodeBlock{87}
+
+
+The areas correspond to the respective areas provided by \texttt{mdlayout}.
+For example,
+
+
+\MDCodeBlock{88}
+
+
+places the table in the normal TextArea, whereas
+
+
+\MDCodeBlock{89}
+
+
+allows a wide reference table to use the complete FullArea.
+
+% ----------------------------------------------------------------------------
+\section{Headers}
+% ----------------------------------------------------------------------------
+
+\texttt{ReferenceTable} provides three header modes:
+
+
+\MDCodeBlock{90}
+
+
+The value
+
+
+\MDCodeBlock{91}
+
+
+is an alias for
+
+
+\MDCodeBlock{92}
+
+
+and may be used when the Boolean spelling appears more natural.
+The compatibility option
+
+
+\MDCodeBlock{93}
+
+
+is also retained. It maps to the corresponding automatic-header and
+no-header modes.
+
+% ----------------------------------------------------------------------------
+\subsection{\texttt{headers=arguments}}
+% ----------------------------------------------------------------------------
+
+The default mode is
+
+
+\MDCodeBlock{94}
+
+
+and corresponds to the traditional \texttt{ReferenceTable} syntax:
+
+
+\MDCodeBlock{95}
+
+
+For compatibility, the explicit \texttt{headers=arguments} declaration is
+normally omitted:
+
+
+\MDCodeBlock{96}
+
+
+The heading arguments are used to construct the automatically repeated table
+header.
+
+
+% ----------------------------------------------------------------------------
+\subsection{\texttt{headers=row}}
+% ----------------------------------------------------------------------------
+
+For n-column tables, the headings can be supplied as the first table row:
+
+
+\MDCodeBlock{97}
+
+
+For example,
+
+
+\MDCodeBlock{98}
+
+
+This syntax has the advantage that the heading has exactly the same
+column-oriented form as an ordinary table row. It is therefore particularly
+convenient for tables with many columns and for automatically generated
+tables whose first data record already contains the column names.
+The header row is separated from the following data rows and is used as the
+table header when the table continues on another page.
+
+% ----------------------------------------------------------------------------
+\subsection{\texttt{headers=none}}
+% ----------------------------------------------------------------------------
+
+Automatic headings and the corresponding automatic table rules can be
+disabled with
+
+
+\MDCodeBlock{99}
+
+
+or equivalently
+
+
+\MDCodeBlock{100}
+
+
+For example,
+
+
+\MDCodeBlock{101}
+
+
+In this mode, \texttt{ReferenceTable} does not generate column headings or
+automatic table rules. Explicit table commands may still be supplied by the
+user. Thus commands such as
+
+
+\MDCodeBlock{102}
+
+
+may be used where required.
+This mode is useful when \texttt{ReferenceTable} is wanted for its area,
+column-width, multipage, or verbatim capabilities, while the visual table
+structure is to remain completely under user control.
+
+% ----------------------------------------------------------------------------
+\section{Caption and Label}
+% ----------------------------------------------------------------------------
+
+A table caption can be specified with
+
+
+\MDCodeBlock{103}
+
+
+and a label with
+
+
+\MDCodeBlock{104}
+
+
+For example,
+
+
+\MDCodeBlock{105}
+
+
+The table can subsequently be referenced in the normal way:
+
+
+\MDCodeBlock{106}
+
+
+A table carrying a caption is treated as a somewhat more distinct
+typographical block and therefore receives a slightly increased separation
+from the preceding text.
+
+% ----------------------------------------------------------------------------
+\section{Typewriter Columns}
+% ----------------------------------------------------------------------------
+
+A column can be typeset in typewriter font with
+
+
+\MDCodeBlock{107}
+
+
+Multiple columns can again be specified with \texttt{+}:
+
+
+\MDCodeBlock{108}
+
+
+The equivalent plural alias is
+
+
+\MDCodeBlock{109}
+
+
+For example,
+
+
+\MDCodeBlock{110}
+
+
+
+
+% ----------------------------------------------------------------------------
+\section{X Columns}
+% ----------------------------------------------------------------------------
+
+Columns whose width should automatically adapt to the available table width
+can be declared as \texttt{X} columns.
+The preferred singular option is
+
+
+
+\MDCodeBlock{111}
+
+
+Several columns are separated by \texttt{+}:
+
+
+\MDCodeBlock{112}
+
+
+The plural spelling
+
+
+\MDCodeBlock{113}
+
+
+is an equivalent alias and is retained for compatibility.
+For example,
+
+
+\MDCodeBlock{114}
+
+
+uses a natural-width first column and an automatically expanding second
+column.
+Several X columns share the width available after the natural-width columns
+have been taken into account. For example,
+
+
+\MDCodeBlock{115}
+
+
+makes columns 2, 4, 6, and 8 flexible.
+Automatic X-column sizing can explicitly be disabled with
+
+
+\MDCodeBlock{116}
+
+
+In that case all columns use their natural width unless another column
+property affects their layout.
+
+% ----------------------------------------------------------------------------
+\section{X-Column Weights}
+% ----------------------------------------------------------------------------
+
+If several X columns are used, their relative widths can be controlled with
+the \texttt{xweights} option. The weights correspond to the X columns in the
+order in which they are specified by \texttt{xcolumn} or \texttt{xcolumns}.
+
+For example,
+
+
+\MDCodeBlock{117}
+
+
+declares columns 2 and 3 as X columns and assigns them the relative widths
+1:\,2. Consequently, column 3 is twice as wide as column 2.
+
+A typical three-column table can therefore be defined as follows:
+
+
+\MDCodeBlock{118}
+
+
+\MDReferenceTable{2}
+In this example, column 1 uses its natural width and is typeset as a
+typewriter column. Columns 2 and 3 share the remaining available width.
+Because their weights are 1:\,2, column 3 is twice as wide as
+column 2.
+
+If \texttt{xweights} is omitted, all X columns have equal weight. Thus,
+
+
+\MDCodeBlock{119}
+
+
+is equivalent to
+
+
+\MDCodeBlock{120}
+
+
+
+The number of weights must match the number of X columns. For example,
+
+
+\MDCodeBlock{121}
+
+
+assigns the relative widths 1:\,2\,:\,3 to columns 2, 3, and 4, respectively.
+
+The weights specify \emph{relative proportions} rather than absolute widths.
+They are normalized internally so that the total width available to the
+X columns remains unchanged. Thus, \texttt{xweights} affects only the
+distribution of this width among the X columns, not the overall width of
+the table.
+
+% ----------------------------------------------------------------------------
+\section{Verbatim Columns}
+% ----------------------------------------------------------------------------
+
+A verbatim column is fundamentally different from a typewriter column.
+The option
+
+
+\MDCodeBlock{122}
+
+
+changes the font used for a normal \LaTeX{} column. Its contents are still
+read and interpreted by \TeX{} in the normal way.
+In contrast,
+
+
+\MDCodeBlock{123}
+
+
+changes how the cell contents themselves are read. Special characters are
+accepted literally instead of being interpreted as \TeX{} syntax.
+Several verbatim columns may be selected:
+
+
+\MDCodeBlock{124}
+
+
+The plural form
+
+
+\MDCodeBlock{125}
+
+
+is an equivalent alias.
+For example, the following contents can be written directly into a verbatim
+column:
+
+
+\MDCodeBlock{126}
+
+
+No additional escaping of these characters is required for the contents of
+the verbatim column.
+This property is especially important for automatically generated tables.
+Suppose an external program produces the strings
+
+
+\MDCodeBlock{127}
+
+
+If the target column is a \texttt{verbatimcolumn}, these strings can be
+written directly to the corresponding cells of the generated
+\texttt{ReferenceTable}. The generator does not have to translate the
+contents into equivalent \LaTeX{} source code first.
+For example, generated source may contain
+
+
+\MDCodeBlock{128}
+
+
+
+\MDReferenceTable{3}
+The first column is transferred as literal textual data, whereas the second
+column remains normal \LaTeX{} and may contain formatting commands,
+mathematics, references, and other \LaTeX{} constructs.
+
+% ----------------------------------------------------------------------------
+\section{Leading Spaces in Verbatim Columns}
+% ----------------------------------------------------------------------------
+
+Real verbatim processing also means that whitespace in the source can become
+part of the table contents. This is important because \LaTeX{} source is
+normally indented for readability.
+By default,
+
+
+\MDCodeBlock{129}
+
+
+removes whitespace preceding the first non-space character of a verbatim
+cell.
+For example, source such as
+
+
+\MDCodeBlock{130}
+
+
+is read as
+
+
+\MDCodeBlock{131}
+
+
+Only whitespace before the first character is removed. Whitespace occurring
+after the first non-space character is preserved exactly. Thus the spaces
+between \texttt{Hello} and \texttt{World} in the example above remain
+unchanged.
+This behaviour makes it possible to indent generated or manually written
+table source without accidentally introducing indentation into the displayed
+verbatim cell.
+Leading whitespace can deliberately be preserved with
+
+
+\MDCodeBlock{132}
+
+
+This is useful when indentation at the beginning of the literal text is
+itself significant.
+
+% ----------------------------------------------------------------------------
+\section{Verbatim versus Typewriter Columns}
+% ----------------------------------------------------------------------------
+
+The distinction between \texttt{verbatimcolumn} and
+\texttt{typewritercolumn} is intentional.
+A \texttt{verbatimcolumn} is intended for material that must be
+reproduced exactly as it appears in the source. Its contents are treated
+as literal text rather than as ordinary \LaTeX{} input. This is useful
+for command names, file names, shell syntax, source fragments, and other
+material where special characters and control sequences must remain
+unchanged.
+A \texttt{typewritercolumn}, in contrast, is an ordinary \LaTeX{}
+column that is merely typeset in a typewriter font. Its contents are
+still interpreted by \LaTeX{}. This makes it suitable for values that
+are obtained from package definitions or other commands while retaining
+the visual appearance of technical or code-like material.
+
+Table~\MDRef{tab:PackageOptions}{1} on page~\MDRef{tab:PackageOptions}{1}
+in this documentation illustrates the difference directly. 
+Its first column is declared as
+
+
+\MDCodeBlock{133}
+
+
+Because the package option names should be reproduced exactly as written.
+The second column is declared as
+
+
+\MDCodeBlock{134}
+
+
+because the displayed default values are obtained from public
+\MDWordmark definitions. The third column retains its default behavior as an ordinary
+\LaTeX{} text column. For example, the source of
+Table~\MDRef{tab:PackageOptions}{1} contains
+
+
+\MDCodeBlock{135}
+
+
+Here, \texttt{\textbackslash{}mdDefaultRightmargin}\footnote{%
+	\MDWordmark provides public definitions for its package-option
+	defaults. For example, \texttt{\textbackslash{}mdDefaultRightmargin}
+	contains the default value of the \texttt{rightmargin} option.
+	These definitions are particularly useful when documenting
+	\MDWordmark itself, since the documented values are obtained
+	directly from the package rather than duplicated in the
+	documentation source.%
+}
+is evaluated by \LaTeX{} and therefore produces the default value
+\texttt{20mm}.
+The same principle is used for defaults that are expressed relative to
+\verb|\baselineskip|:
+
+
+\MDCodeBlock{136}
+
+
+In this case, the factor is obtained from the corresponding
+\MDWordmark definition, while \verb|\baselineskip| is deliberately
+shown as literal \LaTeX{} syntax.
+Thus, the two column types differ not primarily in appearance, but in
+how their contents are interpreted:
+\begin{itemize}
+	\item \texttt{verbatimcolumn}: exact reproduction of source material,
+	\item \texttt{typewritercolumn}: normal \LaTeX{} evaluation with
+	typewriter-style presentation.
+\end{itemize}
+The complete example can be found in the source of this documentation,
+\texttt{mdlayout.tex}, in the definition of
+Table~\MDRef{tab:PackageOptions}{1}.
+
+% ----------------------------------------------------------------------------
+\section{Column Alignment}
+% ----------------------------------------------------------------------------
+
+The horizontal alignment of individual columns can be controlled
+independently of their width and content type.
+The available options are
+
+
+\MDCodeBlock{137}
+
+
+Several columns are specified with \texttt{+}:
+
+
+\MDCodeBlock{138}
+
+
+The plural forms are equivalent aliases:
+
+
+\MDCodeBlock{139}
+
+
+Left alignment is the default. Consequently, an explicit
+\texttt{leftcolumn} declaration is normally not required.
+For example,
+
+
+\MDCodeBlock{140}
+
+
+
+\MDReferenceTable{4}
+
+\noindent Alignment and column width are independent properties. An \texttt{X} column
+can therefore also be left-, center-, or right-aligned:
+
+
+\MDCodeBlock{141}
+
+
+A column must not be assigned more than one alignment. For example,
+
+
+\MDCodeBlock{142}
+
+
+is an error.
+
+% ----------------------------------------------------------------------------
+\section{Independent Column Properties}
+% ----------------------------------------------------------------------------
+
+The column options describe independent properties and may therefore be
+combined freely.
+A column can, for example, simultaneously be
+\begin{itemize}
+	\item an X column,
+	\item a verbatim column,
+	\item a typewriter column, and
+	\item explicitly aligned.
+\end{itemize}
+For example,
+
+
+\MDCodeBlock{143}
+
+
+
+\MDReferenceTable{5}
+In this example the columns have the following properties:
+\begin{center}
+	\MDTabular{3}
+\end{center}
+Thus width, font/content processing, and alignment are independent
+characteristics of a column.
+The same principle applies to n-column tables. For example,
+
+
+\MDCodeBlock{144}
+
+
+makes the four even-numbered columns both flexible X columns and literal
+verbatim columns.
+
+% ----------------------------------------------------------------------------
+\section{Additional Space and Commands Between Rows}
+% ----------------------------------------------------------------------------
+
+Commands which modify the space between table rows may be placed after the
+row separator.
+For example,
+
+
+\MDCodeBlock{145}
+
+
+An explicit amount can also be specified:
+
+
+\MDCodeBlock{146}
+
+
+Several table commands can follow the row separator. For example,
+
+
+\MDCodeBlock{147}
+
+
+The commands following \texttt{\string\\} are applied between the completed
+row and the following data row.
+This post-row mechanism is also available when one or more cells of the row
+are verbatim cells.
+
+% ----------------------------------------------------------------------------
+\section{N-Column Example: Math-Mode Symbols}
+% ----------------------------------------------------------------------------
+
+The following example demonstrates an eight-column table consisting of four
+pairs of symbol and command columns. The command columns are simultaneously
+X columns and verbatim columns.
+
+\MDStyledTable{tex-size-small}{6}
+\noindent Table \MDRef{tab:LaTeXmathSymbols}{4} was typeset by:
+
+
+\MDCodeBlock{148}
+
+
+The example also illustrates an important property of the n-column engine:
+the same physical column may simultaneously be declared as an X column and
+as a verbatim column.
+
+
+% ----------------------------------------------------------------------------
+\section{Complete Command-Table Example}
+% ----------------------------------------------------------------------------
+
+The following example shows a typical command reference table:
+
+\begin{SynchronizedMarginAndTextArea}
+	\begin{TextInMarginArea}
+		{\centering\mdSeeRight\\[1ex]}
+		
+		\textbf{Important:}
+		\texttt{verbatimcolumn} does not mean ``use a typewriter font''.
+		It means ``treat the contents of this column as literal text''.
+		The typewriter appearance is a consequence of the verbatim column.
+	\end{TextInMarginArea}
+
+
+\MDCodeBlock{174}
+
+
+\end{SynchronizedMarginAndTextArea}
+
+
+\MDCodeBlock{149}
+
+
+
+Table~\MDRef{tab:CommandLineCommands}{5} shows the table defined above, with a
+column in verbatim format (column~1) on the left. The right-hand column
+(column~2) contains standard text and requires \LaTeX{} formatting---such as
+\verb|\texttt{FIND NEXT}|---to achieve a typewriter-style appearance.
+
+\MDReferenceTable{7}
+
+
+% ----------------------------------------------------------------------------
+\section{Option Summary}
+% ----------------------------------------------------------------------------
+
+% Conventional Method to generate the option table
+%
+% \begin{center}
+	%     \MDTabular{4}
+	% \end{center}
+
+% Same table content generated by ReferenceTable
+%
+%  - fits automatically into TextArea (xcolumn=3)
+%  - no need for \texttt{...} in column 1 (typewritercolumn=1)
+%  - no explicit table rules for top, mid and bottom
+%    needed - but possible
+%  - left alignment is default
+%  - table headings automatically typeset in bold,
+%    especially in the typewriter column
+%  - automatically continued on page breaks
+%  - selected columns may contain real verbatim input
+%  - n-column tables may alternatively obtain their headings
+%    from the first table row
+ 
+\MDReferenceTable{8}
+
+\noindent Table~\MDRef{tab:OptionSummary}{6} was typeset using the first row of data as column headers via the \texttt{headers=row} option:
+\vspace{2ex}
+\begin{HalfArea}
+
+
+\MDCodeBlock{150}
+
+
+\end{HalfArea}
+The singular and plural forms of the column-property options in
+Table~\MDRef{tab:OptionSummary}{6} are aliases.
+For example,
+
+
+\MDCodeBlock{151}
+
+
+and
+
+
+\MDCodeBlock{152}
+
+
+are equivalent.
+Likewise,
+
+
+\MDCodeBlock{153}
+
+
+is an alias for
+
+
+\MDCodeBlock{154}
+
+
+
+% ----------------------------------------------------------------------------
+\section{Notes and Current Restrictions}
+% ----------------------------------------------------------------------------
+
+\texttt{ReferenceTable} supports an arbitrary positive number of physical
+table columns through the \texttt{columns} option.
+Column numbers used with \texttt{xcolumn}, \texttt{verbatimcolumn},
+\texttt{typewritercolumn}, and the alignment options refer to the physical
+columns from left to right, starting with column~1.
+The traditional
+
+
+\MDCodeBlock{155}
+
+
+interface is provided by \texttt{headers=arguments}. For general n-column
+tables, \texttt{headers=row} provides the more natural interface because the
+first row has exactly the same column structure as the table body.
+If no automatically generated heading is required, use
+
+
+\MDCodeBlock{156}
+
+
+or its alias
+
+
+\MDCodeBlock{157}
+
+
+In that mode the user may provide table rules explicitly.
+The \texttt{ReferenceTable} interface deliberately hides the underlying
+\texttt{xltabular} / \texttt{longtable} implementation. Code using
+\texttt{ReferenceTable} should therefore describe the semantic properties of
+the table through the provided options instead of relying on the internal
+column specification.
+
+This separation is intentional: the purpose of \texttt{ReferenceTable} is
+not merely to shorten an \texttt{xltabular} declaration, but to provide a
+stable semantic table interface in which column width, alignment, font,
+literal/verbatim processing, table area, and header generation can be
+specified independently.
+
+\chapter{Compatibility}
+
+\section{Multicolumn Text}
+The standard \texttt{multicols} environment provided by the
+\texttt{multicol} package can be used seamlessly within the
+\texttt{TextArea}. Column widths are calculated from the current
+\texttt{TextArea} width and therefore require no special treatment
+by \MDWordmark.
+For example, the following code
+
+
+\MDCodeBlock{158}
+
+
+produces a paragraph in which only the middle part is typeset in two
+columns:\\[1ex]
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit, vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu libero, nonummy eget, consectetuer id, vulputate a, magna. Donec vehicula augue eu neque.
+\begin{multicols}{2}
+	Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris ut leo. Cras viverra metus rhoncus sem. Nulla et lectus vestibulum urna fringilla ultrices. Phasellus eu tellus sit amet tortor gravida placerat.
+\end{multicols}
+Integer sapien est, iaculis in, pretium quis, viverra ac, nunc. Praesent eget sem vel leo ultrices bibendum. Aenean faucibus. Morbi dolor nulla, malesuada eu, pulvinar at, mollis ac, nulla. Curabitur auctor semper nulla. Donec varius orci eget risus. Duis nibh mi, congue eu, accumsan eleifend, sagittis quis, diam. Duis eget orci sit amet orci dignissim rutrum. \\[2ex]
+
+\noindent The \texttt{multicols} environment can also be used within
+\texttt{FullArea}. Its columns automatically adapt to the width of
+the surrounding area:
+
+
+\MDCodeBlock{159}
+
+
+\begin{FullArea}
+	Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit, vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu libero, nonummy eget, consectetuer id, vulputate a, magna. Donec vehicula augue eu neque.
+	\begin{multicols}{3}
+		Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris ut leo. Cras viverra metus rhoncus sem. Nulla et lectus vestibulum urna fringilla ultrices. Phasellus eu tellus sit amet tortor gravida placerat. Integer sapien est, iaculis in, pretium quis, viverra ac, nunc. Praesent eget sem vel leo ultrices bibendum. Aenean faucibus. Morbi dolor nulla, malesuada eu, pulvinar at, mollis ac, nulla. Curabitur auctor semper nulla.
+	\end{multicols}
+	Donec varius orci eget risus. Duis nibh mi, congue eu, accumsan eleifend, sagittis quis, diam. Duis eget orci sit amet orci dignissim rutrum.
+\end{FullArea}
+
+
+\section{\LaTeX{} Margin Notes}
+
+The standard \LaTeX{} command \texttt{\textbackslash{}marginpar} can be used
+with \MDWordmark. It is important, however, not to confuse the
+\LaTeX{} margin used for margin notes with the \texttt{MarginArea}
+provided by \MDWordmark.
+
+The \texttt{MarginArea} is an integral part of the horizontal page
+layout defined by \MDWordmark:
+
+
+\MDCodeBlock{160}
+
+
+It is intended for document elements that explicitly use the
+\MDWordmark area model.
+In contrast, \texttt{\textbackslash{}marginpar} retains its normal \LaTeX{}
+meaning. Margin notes are placed in the conventional \LaTeX{} margin
+outside the text area. They are therefore not placed in the
+\MDWordmark \texttt{MarginArea}.
+For example,
+
+
+\MDCodeBlock{161}
+
+
+produces the conventional \LaTeX{} margin note:\\[1ex]
+This is text in the \texttt{TextArea}.
+\marginpar{A LaTeX\\ margin\\ note.}
+The paragraph continues normally.\\[1ex]
+
+\noindent For comparison, text can explicitly be placed in the
+\texttt{MarginArea} using the \MDWordmark area model:
+
+
+\MDCodeBlock{162}
+
+
+which produces:\\[1ex]
+\SyncMarginAndTextArea{This is text in the \texttt{MarginArea}.}
+{This is text in the \texttt{TextArea}.}
+
+\noindent The default \MDWordmark setting of
+
+
+\MDCodeBlock{176}
+
+
+provides relatively little space for conventional margin notes.
+Consequently, longer notes may appear too narrow or may not produce
+a useful layout. If conventional \texttt{\textbackslash{}marginpar} notes are
+an important part of a document, a larger right margin should be
+selected, for example:
+
+
+\MDCodeBlock{163}
+
+
+This additional space is independent of the \MDWordmark
+\texttt{MarginArea} on the left.
+Thus, both concepts can coexist in the same document, but they serve
+fundamentally different purposes: \texttt{\textbackslash{}marginpar} creates
+a conventional \LaTeX{} margin note outside the \texttt{TextArea},
+whereas the \texttt{MarginArea} is part of the structural page model
+of \MDWordmark and can contain ordinary document content.
+
+\begin{note}
+	It should be emphasized that the \texttt{MarginArea} is not related to the
+	\LaTeX{} page margins. It constitutes a spatially completely separate area
+	and does not overlap with them. In a standard \LaTeX{} or KOMA-Script layout,
+	this additional text area \emph{does not exist at all}.
+\end{note}
+
+% ----------------------------------------------------------------------------
+\section{Standalone Use of Subpackages}
+\label{sec:StandaloneSubpackages}
+% ----------------------------------------------------------------------------
+
+The \texttt{ReferenceTable} and \texttt{Printout} environments are implemented
+in separate package files and can currently also be used without loading the
+main \texttt{mdlayout} package.
+
+This permits the environments to be used in documents which do not otherwise
+use the \texttt{mdlayout} layout model. For example, a document requiring only
+reference tables may load
+
+
+
+\MDCodeBlock{164}
+
+
+
+and a document requiring only the continuous-paper printout environment may
+load
+
+
+
+\MDCodeBlock{165}
+
+
+
+Both packages determine the geometry required for their environments from
+standard \LaTeX{} dimensions when the corresponding \texttt{mdlayout}
+dimensions are not available.
+
+In standalone operation, the basic geometry is derived from
+
+
+
+\MDCodeBlock{166}
+
+
+
+The margin area and the separation between the margin and the normal text area
+therefore have to be defined appropriately by the document class or by another
+layout package. They may, for example, be established with \texttt{geometry}:
+
+
+
+\MDCodeBlock{167}
+
+
+
+The same principle applies to \texttt{mdlayout-referencetable}. If
+\texttt{mdlayout} is present, however, both subpackages use the layout
+dimensions calculated by \texttt{mdlayout} and therefore remain synchronized
+with its text, margin, and full-width areas.
+
+\begin{note}
+	Standalone use of \texttt{mdlayout-referencetable} and
+	\texttt{mdlayout-printout} is provided primarily as a convenience and is
+	\emph{not the recommended mode of operation}.
+	
+	The supported and preferred configuration is to load the main
+	\texttt{mdlayout} package and let it load the corresponding subpackages.
+	This ensures that the subpackage versions and their layout calculations are
+	consistent with the version of \texttt{mdlayout} in use.
+	
+	Standalone operation relies on the subpackages being able to derive a
+	suitable layout from standard \LaTeX{} dimensions. Although this is possible
+	with the current implementation, it is not part of the guaranteed long-term
+	interface of \texttt{mdlayout}. Future versions may change the internal
+	requirements of these environments and may therefore restrict or remove
+	standalone operation.
+\end{note}
+
+\section*{Tixi's work here is done \ldots}
+
+\begin{FullArea}
+	\begin{center}
+		\includegraphics[width=0.7\mdTextWidth]{images/mdlayout-tixi-finished.webp}
+	\end{center}
+\bigskip
+\begin{center}
+	\textit{Tixi has left her tools behind, and her paw prints slowly
+		disappear beyond these pages.}\\[0.5\baselineskip]
+	\textit{Perhaps, one day, they will lead her back to us ---
+		for another \MDWordmark or \LaTeX{} project.}
+\end{center}
+\end{FullArea}
+
+\end{document}
