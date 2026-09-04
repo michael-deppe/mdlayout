@@ -155,8 +155,12 @@ logical width; the package reduces the monospaced font only when necessary.
   linenumbers=true,
   punchholes=true
 ]
-HH        HH  EEEEEEEEEEEE  RRRRRRRRRRR
-HHHHHHHHHHHH  EEEEEEEE      RRRRRRRRRRRR
+ _   _ _____ _     _     ___
+| | | | ____| |   | |   / _ \
+| |_| |  _| | |   | |  | | | |
+|  _  | |___| |___| |__| |_| |
+|_| |_|_____|_____|_____\___/
+
 \end{Printout}
 ```
 
